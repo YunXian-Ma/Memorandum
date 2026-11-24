@@ -68,7 +68,7 @@ fun PersonRow(
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = person.relationship.label,
+                        text = person.relationship.name,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = tint.foreground,

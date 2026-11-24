@@ -33,7 +33,7 @@ fun RelationshipTag(
 ) {
     val tint = relationshipTint(relationship)
     Text(
-        text = relationship.label,
+        text = relationship.name,
         modifier = modifier
             .clip(CircleShape)
             .background(tint.background)

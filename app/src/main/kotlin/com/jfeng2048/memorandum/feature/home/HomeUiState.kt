@@ -7,7 +7,10 @@ import com.jfeng2048.memorandum.domain.model.Relationship
 data class HomeUiState(
     val isLoading: Boolean = true,
     val query: String = "",
-    val relationship: Relationship? = null,
+    /** null 表示「全部」 */
+    val selectedRelationshipId: Long? = null,
+    /** 关系筛选条，来自用户维护的关系表 */
+    val relationships: List<Relationship> = emptyList(),
     val sort: HomeSort = HomeSort.RECENT,
     val people: List<PersonCardUi> = emptyList(),
     val totalPeople: Int = 0,
@@ -27,7 +30,9 @@ data class PersonCardUi(
 
 sealed interface HomeEvent {
     data class QueryChanged(val value: String) : HomeEvent
-    data class FilterChanged(val relationship: Relationship?) : HomeEvent
+
+    /** relationshipId 为 null 表示「全部」 */
+    data class FilterChanged(val relationshipId: Long?) : HomeEvent
     data object ToggleSort : HomeEvent
 
     /** 随便翻一个：随机进入某个人物 */

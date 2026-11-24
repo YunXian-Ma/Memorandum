@@ -66,6 +66,7 @@ import com.jfeng2048.memorandum.feature.home.components.PersonRow
 fun HomeScreen(
     onOpenPerson: (Long) -> Unit,
     onCreatePerson: () -> Unit,
+    onManageRelationships: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,6 +87,7 @@ fun HomeScreen(
         onRandom = { viewModel.onEvent(HomeEvent.RandomPick) },
         onOpenPerson = onOpenPerson,
         onCreatePerson = onCreatePerson,
+        onManageRelationships = onManageRelationships,
         onRetry = { viewModel.onEvent(HomeEvent.Retry) },
     )
 }
@@ -94,11 +96,12 @@ fun HomeScreen(
 private fun HomeContent(
     state: HomeUiState,
     onQueryChange: (String) -> Unit,
-    onFilterChange: (Relationship?) -> Unit,
+    onFilterChange: (Long?) -> Unit,
     onToggleSort: () -> Unit,
     onRandom: () -> Unit,
     onOpenPerson: (Long) -> Unit,
     onCreatePerson: () -> Unit,
+    onManageRelationships: () -> Unit,
     onRetry: () -> Unit,
 ) {
     Box(
@@ -143,13 +146,19 @@ private fun HomeContent(
                     )
                     Spacer(Modifier.weight(1f))
                     RandomButton(onClick = onRandom)
+                    Spacer(Modifier.width(8.dp))
+                    ManageRelationshipsButton(onClick = onManageRelationships)
                 }
 
                 Spacer(Modifier.height(14.dp))
                 SearchField(value = state.query, onValueChange = onQueryChange)
 
                 Spacer(Modifier.height(14.dp))
-                FilterTabs(selected = state.relationship, onSelect = onFilterChange)
+                FilterTabs(
+                    relationships = state.relationships,
+                    selectedId = state.selectedRelationshipId,
+                    onSelect = onFilterChange,
+                )
             }
 
             HorizontalDivider(color = Hairline)
@@ -247,9 +256,24 @@ private fun RandomButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun ManageRelationshipsButton(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(TrackGrey)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = "关系管理", fontSize = 12.sp, color = TextTertiary)
+    }
+}
+
+@Composable
 private fun FilterTabs(
-    selected: Relationship?,
-    onSelect: (Relationship?) -> Unit,
+    relationships: List<Relationship>,
+    selectedId: Long?,
+    onSelect: (Long?) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -260,15 +284,15 @@ private fun FilterTabs(
         FilterTab(
             label = "全部",
             dotColor = null,
-            selected = selected == null,
+            selected = selectedId == null,
             onClick = { onSelect(null) },
         )
-        Relationship.entries.forEach { relationship ->
+        relationships.forEach { relationship ->
             FilterTab(
-                label = relationship.label,
+                label = relationship.name,
                 dotColor = relationshipTint(relationship).foreground,
-                selected = selected == relationship,
-                onClick = { onSelect(relationship) },
+                selected = selectedId == relationship.id,
+                onClick = { onSelect(relationship.id) },
             )
         }
     }

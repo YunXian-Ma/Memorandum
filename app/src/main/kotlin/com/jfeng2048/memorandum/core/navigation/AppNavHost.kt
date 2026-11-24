@@ -11,6 +11,7 @@ import com.jfeng2048.memorandum.feature.detail.DetailScreen
 import com.jfeng2048.memorandum.feature.entryform.EntryFormScreen
 import com.jfeng2048.memorandum.feature.home.HomeScreen
 import com.jfeng2048.memorandum.feature.personform.PersonFormScreen
+import com.jfeng2048.memorandum.feature.relationship.RelationshipScreen
 
 /**
  * 全应用只有这一个 NavHost，页面之间不共享 Activity。
@@ -30,7 +31,14 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                 onCreatePerson = {
                     navController.navigate(Routes.PERSON_CREATE)
                 },
+                onManageRelationships = {
+                    navController.navigate(Routes.RELATIONSHIPS)
+                },
             )
+        }
+
+        composable(Routes.RELATIONSHIPS) {
+            RelationshipScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.PERSON_CREATE) {

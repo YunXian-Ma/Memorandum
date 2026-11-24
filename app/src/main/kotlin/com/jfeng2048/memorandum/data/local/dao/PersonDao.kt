@@ -26,6 +26,9 @@ interface PersonDao {
     @Query("SELECT COUNT(*) FROM persons")
     suspend fun count(): Int
 
+    @Query("SELECT COUNT(*) FROM persons WHERE relationshipId = :relationshipId")
+    suspend fun countByRelationship(relationshipId: Long): Int
+
     @Insert
     suspend fun insert(person: PersonEntity): Long
 

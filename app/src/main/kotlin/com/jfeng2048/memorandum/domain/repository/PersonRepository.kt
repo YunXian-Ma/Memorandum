@@ -21,9 +21,23 @@ interface PersonRepository {
 
     suspend fun getEntry(entryId: Long): PersonEntry?
 
+    /** 观察全部关系，按用户自定义顺序排列 */
+    fun observeRelationships(): Flow<List<Relationship>>
+
+    /** 新增关系，返回新关系 id；颜色按现有数量轮转 */
+    suspend fun createRelationship(name: String): Long
+
+    suspend fun renameRelationship(relationshipId: Long, name: String)
+
+    /**
+     * 删除关系。
+     * 返回 false 表示被人物引用或已是最后一个关系，调用方需要提示原因。
+     */
+    suspend fun deleteRelationship(relationshipId: Long): Boolean
+
     suspend fun createPerson(
         name: String,
-        relationship: Relationship,
+        relationshipId: Long,
         gender: Gender,
         bio: String,
     ): Long
@@ -31,7 +45,7 @@ interface PersonRepository {
     suspend fun updatePerson(
         personId: Long,
         name: String,
-        relationship: Relationship,
+        relationshipId: Long,
         gender: Gender,
         bio: String,
     )

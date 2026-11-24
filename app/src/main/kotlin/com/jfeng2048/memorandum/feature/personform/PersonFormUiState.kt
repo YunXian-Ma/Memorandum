@@ -7,18 +7,23 @@ data class PersonFormUiState(
     val isLoading: Boolean = false,
     val isEditing: Boolean = false,
     val name: String = "",
-    val relationship: Relationship = Relationship.FRIEND,
+    /** 关系选项来自用户维护的关系表 */
+    val relationships: List<Relationship> = emptyList(),
+    val relationshipId: Long? = null,
     val gender: Gender = Gender.UNKNOWN,
     val bio: String = "",
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
 ) {
-    val canSave: Boolean get() = name.isNotBlank() && !isSaving
+    val selectedRelationship: Relationship?
+        get() = relationships.firstOrNull { it.id == relationshipId }
+
+    val canSave: Boolean get() = name.isNotBlank() && relationshipId != null && !isSaving
 }
 
 sealed interface PersonFormEvent {
     data class NameChanged(val value: String) : PersonFormEvent
-    data class RelationshipChanged(val relationship: Relationship) : PersonFormEvent
+    data class RelationshipChanged(val relationshipId: Long) : PersonFormEvent
     data class GenderChanged(val gender: Gender) : PersonFormEvent
     data class BioChanged(val value: String) : PersonFormEvent
     data object Save : PersonFormEvent

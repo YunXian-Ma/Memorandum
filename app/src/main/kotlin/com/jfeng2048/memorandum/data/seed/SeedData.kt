@@ -2,8 +2,10 @@ package com.jfeng2048.memorandum.data.seed
 
 import com.jfeng2048.memorandum.data.local.dao.EntryDao
 import com.jfeng2048.memorandum.data.local.dao.PersonDao
+import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
+import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
 import com.jfeng2048.memorandum.domain.model.EntryCategory
 import com.jfeng2048.memorandum.domain.model.Gender
 import com.jfeng2048.memorandum.domain.model.Relationship
@@ -27,7 +29,8 @@ internal object SeedData {
 
     private data class SeedPerson(
         val name: String,
-        val relationship: Relationship,
+        /** 关系名，写入时按名字映射到关系表主键 */
+        val relationship: String,
         val gender: Gender,
         val bio: String,
         val createdDaysAgo: Int,
@@ -38,7 +41,7 @@ internal object SeedData {
     private val people = listOf(
         SeedPerson(
             name = "陈知远",
-            relationship = Relationship.FRIEND,
+            relationship = "朋友",
             gender = Gender.MALE,
             bio = "大学室友，做建筑设计。周三晚上通常在城西球场。",
             createdDaysAgo = 250,
@@ -53,7 +56,7 @@ internal object SeedData {
         ),
         SeedPerson(
             name = "林嘉禾",
-            relationship = Relationship.COLLEAGUE,
+            relationship = "同事",
             gender = Gender.FEMALE,
             bio = "Android 组同事，管性能和启动优化。说话很快。",
             createdDaysAgo = 170,
@@ -68,7 +71,7 @@ internal object SeedData {
         ),
         SeedPerson(
             name = "苏晚",
-            relationship = Relationship.CLASSMATE,
+            relationship = "同学",
             gender = Gender.FEMALE,
             bio = "高中同学，现在在杭州画插画。不太回消息，但会寄明信片。",
             createdDaysAgo = 280,
@@ -82,7 +85,7 @@ internal object SeedData {
         ),
         SeedPerson(
             name = "周叙白",
-            relationship = Relationship.CLIENT,
+            relationship = "客户",
             gender = Gender.MALE,
             bio = "甲方项目负责人。沟通直接，不喜欢电话。",
             createdDaysAgo = 80,
@@ -95,7 +98,7 @@ internal object SeedData {
         ),
         SeedPerson(
             name = "外婆",
-            relationship = Relationship.FAMILY,
+            relationship = "家人",
             gender = Gender.FEMALE,
             bio = "住临安。五点起床，春天一定做腌笃鲜。",
             createdDaysAgo = 320,
@@ -109,7 +112,7 @@ internal object SeedData {
         ),
         SeedPerson(
             name = "何岸",
-            relationship = Relationship.COLLEAGUE,
+            relationship = "同事",
             gender = Gender.MALE,
             bio = "产品经理，健身，午饭只吃轻食。",
             createdDaysAgo = 45,
@@ -122,12 +125,29 @@ internal object SeedData {
         ),
     )
 
-    suspend fun insert(personDao: PersonDao, entryDao: EntryDao, now: Long) {
+    suspend fun insert(
+        personDao: PersonDao,
+        relationshipDao: RelationshipDao,
+        entryDao: EntryDao,
+        now: Long,
+    ) {
+        // 先写入默认关系，后续人物通过「名字 → 主键」建立外键
+        val relationshipIds = Relationship.DEFAULT_NAMES.mapIndexed { index, name ->
+            name to relationshipDao.insert(
+                RelationshipEntity(
+                    name = name,
+                    colorIndex = index,
+                    sortOrder = index,
+                    createdAt = now,
+                ),
+            )
+        }.toMap()
+
         people.forEach { seed ->
             val personId = personDao.insert(
                 PersonEntity(
                     name = seed.name,
-                    relationship = seed.relationship.label,
+                    relationshipId = relationshipIds.getValue(seed.relationship),
                     gender = seed.gender.label,
                     description = seed.bio,
                     createdAt = now - seed.createdDaysAgo * DAY,

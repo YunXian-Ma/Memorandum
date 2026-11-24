@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 /**
  * 首页：组合「筛选条件」与「数据库 Flow」，单向数据流。
  * 搜索、关系筛选、排序全部在内存里完成，数据量是本地通讯录级别，足够快。
+ * 关系筛选条来自关系表，用户新增/删除关系后会自动刷新。
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -35,7 +36,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
-    private val relationship = MutableStateFlow<Relationship?>(null)
+    private val selectedRelationshipId = MutableStateFlow<Long?>(null)
     private val sort = MutableStateFlow(HomeSort.RECENT)
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -53,7 +54,7 @@ class HomeViewModel @Inject constructor(
     fun onEvent(event: HomeEvent) {
         when (event) {
             is HomeEvent.QueryChanged -> query.value = event.value
-            is HomeEvent.FilterChanged -> relationship.value = event.relationship
+            is HomeEvent.FilterChanged -> selectedRelationshipId.value = event.relationshipId
             HomeEvent.ToggleSort -> sort.value =
                 if (sort.value == HomeSort.RECENT) HomeSort.NAME else HomeSort.RECENT
 
@@ -64,12 +65,15 @@ class HomeViewModel @Inject constructor(
 
     private fun startObserving() {
         observeJob?.cancel()
-        observeJob = combine(query, relationship, sort) { q, r, s ->
-            Filters(q, r, s)
+        observeJob = combine(
+            query,
+            selectedRelationshipId,
+            sort,
+            repository.observePeople(),
+            repository.observeRelationships(),
+        ) { q, relationshipId, s, people, relationships ->
+            Filters(q, relationshipId, s) to PageData(people, relationships)
         }
-            .combine(repository.observePeople()) { filters, people ->
-                filters to people
-            }
             .onStart {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             }
@@ -81,21 +85,25 @@ class HomeViewModel @Inject constructor(
                     )
                 }
             }
-            .onEach { (filters, people) ->
-                _uiState.value = buildState(people, filters)
+            .onEach { (filters, data) ->
+                _uiState.value = buildState(data, filters)
             }
             .launchIn(viewModelScope)
     }
 
-    private fun buildState(people: List<Person>, filters: Filters): HomeUiState {
+    private fun buildState(data: PageData, filters: Filters): HomeUiState {
+        // 选中的关系被删除后自动回到「全部」，避免列表空白又找不到原因
+        val selectedId = filters.relationshipId
+            ?.takeIf { id -> data.relationships.any { it.id == id } }
         val visible = PersonFilters.sort(
-            PersonFilters.filter(people, filters.query, filters.relationship),
+            PersonFilters.filter(data.people, filters.query, selectedId),
             filters.sort,
         )
         return HomeUiState(
             isLoading = false,
             query = filters.query,
-            relationship = filters.relationship,
+            selectedRelationshipId = selectedId,
+            relationships = data.relationships,
             sort = filters.sort,
             people = visible.map { person ->
                 PersonCardUi(
@@ -107,8 +115,8 @@ class HomeViewModel @Inject constructor(
                     updatedAt = person.updatedAt,
                 )
             },
-            totalPeople = people.size,
-            totalEntries = people.sumOf { it.entryCount },
+            totalPeople = data.people.size,
+            totalEntries = data.people.sumOf { it.entryCount },
         )
     }
 
@@ -122,7 +130,12 @@ class HomeViewModel @Inject constructor(
 
     private data class Filters(
         val query: String,
-        val relationship: Relationship?,
+        val relationshipId: Long?,
         val sort: HomeSort,
+    )
+
+    private data class PageData(
+        val people: List<Person>,
+        val relationships: List<Relationship>,
     )
 }

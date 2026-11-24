@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.jfeng2048.memorandum.data.local.AppDatabase
 import com.jfeng2048.memorandum.data.local.dao.EntryDao
 import com.jfeng2048.memorandum.data.local.dao.PersonDao
+import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,6 +27,9 @@ object DatabaseModule {
 
     @Provides
     fun providePersonDao(database: AppDatabase): PersonDao = database.personDao()
+
+    @Provides
+    fun provideRelationshipDao(database: AppDatabase): RelationshipDao = database.relationshipDao()
 
     @Provides
     fun provideEntryDao(database: AppDatabase): EntryDao = database.entryDao()

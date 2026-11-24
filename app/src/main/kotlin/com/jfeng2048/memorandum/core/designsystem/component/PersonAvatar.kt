@@ -26,12 +26,12 @@ import com.jfeng2048.memorandum.domain.model.Relationship
 @Composable
 fun PersonAvatar(
     name: String,
-    relationship: Relationship,
+    relationship: Relationship?,
     size: Dp,
     modifier: Modifier = Modifier,
     ring: Boolean = false,
 ) {
-    val tint = relationshipTint(relationship)
+    val tint = relationshipTint(relationship ?: Relationship.Unknown)
     val initial = name.trim().firstOrNull()?.toString() ?: "?"
 
     Box(

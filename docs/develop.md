@@ -66,6 +66,7 @@ Memorandum/
 │       │           ├── home/            # HomeScreen / HomeViewModel / HomeUiState + components
 │       │           ├── detail/          # DetailScreen / DetailViewModel / DetailUiState + components
 │       │           ├── personform/      # 新建 / 编辑人物
+│       │           ├── relationship/    # 关系管理（新增 / 重命名 / 删除）
 │       │           └── entryform/       # 新建 / 编辑词条
 │       ├── test/                        # JVM 单测
 │       └── androidTest/                 # 仪器测试（模板保留）
@@ -144,13 +145,24 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 | 日期用 `SimpleDateFormat` + `Calendar` | minSdk 24 上使用 `java.time` 需要开启脱糖，多一份构建复杂度 |
 | 中文姓名排序用 `Collator.getInstance(Locale.CHINA)` | 避免按 Unicode 码点排序导致的「假拼音序」 |
 | `PersonAvatar` 用姓名首字 + 关系色 | 原型即如此；不引入图片加载库与权限 |
-| 关系 / 分类在数据库里存中文标签 | 可读性优先，读取时 `fromLabel()` 兜底到「其他」 |
+| 关系存成独立的 `relationships` 表 | 关系由用户维护，可新增/改名/删除；人物存 `relationshipId` 外键 |
+| 分类在数据库里存中文标签 | 分类是固定枚举，可读性优先，读取时 `fromLabel()` 兜底到「其他」 |
 
 ---
 
 ## 4. 数据层设计
 
 ### 4.1 表结构
+
+`relationships`（关系表，由用户维护）
+
+| 列 | 类型 | 说明 |
+| --- | --- | --- |
+| id | INTEGER PK AUTOINCREMENT | 主键 |
+| name | TEXT NOT NULL | 关系名称，如「朋友」「球友」 |
+| colorIndex | INTEGER NOT NULL | 色板序号 0..7，决定头像与筛选点的颜色 |
+| sortOrder | INTEGER NOT NULL | 展示顺序，新增的关系排在最后 |
+| createdAt | INTEGER | epoch millis |
 
 `persons`
 
@@ -159,7 +171,7 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 | id | INTEGER PK AUTOINCREMENT | 主键 |
 | name | TEXT NOT NULL | 姓名 |
 | avatarUri | TEXT NULL | 预留，当前恒为 null |
-| relationship | TEXT NOT NULL | 关系中文标签（朋友/同事/家人/同学/客户/其他） |
+| relationshipId | INTEGER NOT NULL | 外键 → `relationships.id`，`onDelete = RESTRICT` |
 | gender | TEXT NULL | 男 / 女 / 未知 |
 | description | TEXT NULL | 个人简介 |
 | createdAt | INTEGER | epoch millis |
@@ -177,7 +189,7 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 | createdAt | INTEGER | epoch millis |
 | updatedAt | INTEGER | epoch millis |
 
-索引：`entries.personId`（外键查询与 `@Relation` 都需要）。
+索引：`entries.personId`、`persons.relationshipId`（外键查询与 `@Relation` 都需要）。
 
 ### 4.2 DAO
 
@@ -189,22 +201,30 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 | `observeWithEntries(id)` | `Flow<PersonWithEntries?>` | 详情页单人观察 |
 | `findById(id)` | `PersonEntity?` | 编辑时取原始实体 |
 | `count()` | `Int` | 判断是否需要写种子数据 |
+| `countByRelationship(id)` | `Int` | 删除关系前检查是否仍被人物引用 |
 | `insert` / `update` / `deleteById` | — | 增改删 |
 | `touch(id, timestamp)` | — | 词条变更时刷新人物最后更新时间 |
 
+`RelationshipDao`：`observeAll` / `findById` / `count` / `insert` / `update` / `deleteById`。
+
 `EntryDao`：`findById` / `insert` / `update` / `deleteById`。
 
-`@Transaction + @Relation` 一次查询拿到「人物 + 全部词条」，避免 N+1 查询；映射在 `data/mapper/Mappers.kt` 中完成，词条按 `updatedAt` 倒序。
+`@Transaction + @Relation` 一次查询拿到「人物 + 关系 + 全部词条」，避免 N+1 查询；映射在 `data/mapper/Mappers.kt` 中完成，词条按 `updatedAt` 倒序。
+
+关系删除有双重保护：
+
+1. `PersonRepositoryImpl.deleteRelationship()` 先检查 `count() <= 1` 与 `countByRelationship()`，不满足直接返回 false（页面提示原因）。
+2. 数据库外键 `onDelete = RESTRICT` 作为第二道保险，即使绕过 Repository 也不会删除有人物引用的关系。
 
 ### 4.3 存储与迁移策略
 
-- 数据库名 `memorandum.db`，`version = 1`，`exportSchema = false`。
+- 数据库名 `memorandum.db`，`version = 2`（v2 新增 `relationships` 表、`persons.relationship` 改为 `relationshipId`），`exportSchema = false`。
 - 当前使用 `fallbackToDestructiveMigration(dropAllTables = true)`：**升级版本会清空数据**。正式发版前应改为：`exportSchema = true` + 手写 `Migration`，或引入 `AutoMigration`。
-- 演示数据标记使用 `SharedPreferences("memorandum_prefs")` 的 `seed_done` 布尔值。标记为 true 后即使用户删光所有人物，也不会再自动灌入演示数据。
+- 演示数据标记使用 `SharedPreferences("memorandum_prefs")` 的 `seed_done_v2` 布尔值。key 带版本号是为了让清库升级后能重新写入默认关系与演示数据；标记为 true 后即使用户删光所有人物，也不会再自动灌入。
 
 ### 4.4 演示数据
 
-[SeedData.kt](file:///Users/kika/code/android_project/demo/Memorandum/app/src/main/kotlin/com/jfeng2048/memorandum/data/seed/SeedData.kt) 内置 6 个人物、24 条词条；时间按「距今 N 天 / N 小时」推算，保证首页能同时出现「今天」「昨天」「11.20」三种时间文案。写入发生在 `App.onCreate()` 的 IO 协程里，不阻塞首帧。
+[SeedData.kt](file:///Users/kika/code/android_project/demo/Memorandum/app/src/main/kotlin/com/jfeng2048/memorandum/data/seed/SeedData.kt) 先写入 6 个默认关系（朋友/同事/家人/同学/客户/其他），再写入 6 个人物、24 条词条；人物通过「关系名 → 关系主键」建立外键。时间按「距今 N 天 / N 小时」推算，保证首页能同时出现「今天」「昨天」「11.20」三种时间文案。写入发生在 `App.onCreate()` 的 IO 协程里，不阻塞首帧。
 
 ---
 
@@ -215,6 +235,7 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 | 路由 | 参数 | 页面 | 说明 |
 | --- | --- | --- | --- |
 | `home` | — | `HomeScreen` | 启动目的地 |
+| `relationships` | — | `RelationshipScreen` | 关系管理 |
 | `person/create` | — | `PersonFormScreen` | 新建人物 |
 | `person/{personId}` | `Long` | `DetailScreen` | 人物详情 |
 | `person/{personId}/edit` | `Long` | `PersonFormScreen` | 编辑人物 |
@@ -239,7 +260,7 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 | 文件 | 内容 |
 | --- | --- |
 | `Color.kt` | 基础色 token：`BrandBlue`、`Ink`、`Muted`、`Hairline`、`Canvas`、`SurfaceMuted`、`TrackGrey`、`DangerRed` 等 |
-| `Tints.kt` | `Tint(background, foreground)`；`relationshipTint()` 六种关系色；`categoryColor()` 九种分类色 |
+| `Tints.kt` | `Tint(background, foreground)`；`relationshipTint(colorIndex)` 8 色关系色板（按 `colorIndex` 取模）；`categoryColor()` 九种分类色 |
 | `Type.kt` | `AppTypography`；`PersonNameTextStyle`（Serif 29sp）、`NumericTextStyle` |
 | `Dimens.kt` | `Spacing`（4/8/12/16/20/24/32dp）、`Radius`（input 12 / card 16 / panel 10 / tag 999）、`AppShapes` |
 | `Theme.kt` | `lightColorScheme` + `MemorandumTheme` |
@@ -360,7 +381,7 @@ adb logcat -s Memorandum:V
 
 ### 9.2 数据库调试
 
-Android Studio → **App Inspection → Database Inspector**，选择 `memorandum.db` 可直接查看 `persons` / `entries` 两张表并执行 SQL。也可用命令行：
+Android Studio → **App Inspection → Database Inspector**，选择 `memorandum.db` 可直接查看 `relationships` / `persons` / `entries` 三张表并执行 SQL。也可用命令行：
 
 ```bash
 adb shell "run-as com.jfeng2048.memorandum ls databases"
@@ -391,7 +412,7 @@ adb shell dumpsys activity activities | grep memorandum        # 查看任务栈
 
 | 文件 | 覆盖点 |
 | --- | --- |
-| `domain/PersonFiltersTest.kt` | 关键词命中词条标题 / 词条描述、无误命中、关系筛选、最近更新倒序 |
+| `domain/PersonFiltersTest.kt` | 关键词命中词条标题 / 词条描述、无误命中、按关系 id 筛选、最近更新倒序 |
 | `core/util/DateFormatsTest.kt` | 今天 / 昨天 / 同年月日 / 跨年完整日期 / 建档完整日期 |
 
 ```bash
@@ -486,6 +507,7 @@ minSdk 24 下使用 `java.time` 需要开启 core library desugaring；本工程
 - 未在开发机执行完整构建 / 真机验证（按项目要求跳过），首次 Sync 可能遇到环境相关提示，参考第 11 节。
 - 固定浅色主题，无深色模式。
 - 头像为生成式（关系色 + 首字），未接入相册与裁剪。
+- 关系可新增 / 改名 / 删除，但暂不支持拖动排序，新增的关系固定在末尾。
 - 无回收站、无导入导出、无云同步。
 - 搜索为内存全量扫描，数据量极大时需改为 `LIKE` 查询 + 分页。
 

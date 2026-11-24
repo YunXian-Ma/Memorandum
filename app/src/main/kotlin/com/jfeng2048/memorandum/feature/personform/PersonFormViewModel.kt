@@ -12,7 +12,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -42,6 +45,7 @@ class PersonFormViewModel @Inject constructor(
     val effects: Flow<PersonFormEffect> = _effects.receiveAsFlow()
 
     init {
+        observeRelationships()
         if (personId != null) load()
     }
 
@@ -52,7 +56,7 @@ class PersonFormViewModel @Inject constructor(
             }
 
             is PersonFormEvent.RelationshipChanged -> _uiState.update {
-                it.copy(relationship = event.relationship)
+                it.copy(relationshipId = event.relationshipId)
             }
 
             is PersonFormEvent.GenderChanged -> _uiState.update {
@@ -66,6 +70,30 @@ class PersonFormViewModel @Inject constructor(
             PersonFormEvent.Save -> save()
             PersonFormEvent.Retry -> if (personId != null) load()
         }
+    }
+
+    /**
+     * 关系选项实时跟随关系表。
+     * 新建时默认选中第一个关系；编辑时 [load] 会覆盖成人物当前关系。
+     */
+    private fun observeRelationships() {
+        repository.observeRelationships()
+            .onEach { relationships ->
+                _uiState.update { state ->
+                    val stillValid = relationships.any { it.id == state.relationshipId }
+                    state.copy(
+                        relationships = relationships,
+                        relationshipId = when {
+                            stillValid -> state.relationshipId
+                            else -> relationships.firstOrNull()?.id
+                        },
+                    )
+                }
+            }
+            .catch { error ->
+                _uiState.update { it.copy(errorMessage = error.message ?: "关系读取失败") }
+            }
+            .launchIn(viewModelScope)
     }
 
     private fun load() {
@@ -82,7 +110,7 @@ class PersonFormViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 name = person.name,
-                                relationship = person.relationship,
+                                relationshipId = person.relationship.id,
                                 gender = person.gender,
                                 bio = person.bio,
                                 errorMessage = null,
@@ -103,14 +131,15 @@ class PersonFormViewModel @Inject constructor(
 
     private fun save() {
         val state = _uiState.value
-        if (!state.canSave) return
+        val relationshipId = state.relationshipId
+        if (!state.canSave || relationshipId == null) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
             runCatching {
                 if (personId == null) {
                     repository.createPerson(
                         name = state.name.trim(),
-                        relationship = state.relationship,
+                        relationshipId = relationshipId,
                         gender = state.gender,
                         bio = state.bio.trim(),
                     )
@@ -118,7 +147,7 @@ class PersonFormViewModel @Inject constructor(
                     repository.updatePerson(
                         personId = personId,
                         name = state.name.trim(),
-                        relationship = state.relationship,
+                        relationshipId = relationshipId,
                         gender = state.gender,
                         bio = state.bio.trim(),
                     )

@@ -2,7 +2,6 @@ package com.jfeng2048.memorandum.domain.usecase
 
 import com.jfeng2048.memorandum.domain.model.HomeSort
 import com.jfeng2048.memorandum.domain.model.Person
-import com.jfeng2048.memorandum.domain.model.Relationship
 import java.text.Collator
 import java.util.Locale
 
@@ -27,9 +26,9 @@ object PersonFilters {
     fun filter(
         people: List<Person>,
         query: String,
-        relationship: Relationship?,
+        relationshipId: Long?,
     ): List<Person> = people.filter { person ->
-        (relationship == null || person.relationship == relationship) && matches(person, query)
+        (relationshipId == null || person.relationship.id == relationshipId) && matches(person, query)
     }
 
     fun sort(people: List<Person>, sort: HomeSort): List<Person> = when (sort) {

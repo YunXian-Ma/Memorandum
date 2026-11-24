@@ -12,16 +12,26 @@ data class Tint(
 
 /**
  * 关系色：只做底色与文字色，不喧哗。
- * 取值与原型 REL_STYLE 一致。
+ * 前六个取值与原型 REL_STYLE 一致，后两个留给用户新增的关系。
+ * 颜色由关系自身的 [Relationship.colorIndex] 决定，保证改名、排序后颜色稳定。
  */
-fun relationshipTint(relationship: Relationship): Tint = when (relationship) {
-    Relationship.FRIEND -> Tint(Color(0xFFFFE7DE), Color(0xFFB4431F))
-    Relationship.COLLEAGUE -> Tint(Color(0xFFE3ECFF), Color(0xFF2C56B8))
-    Relationship.FAMILY -> Tint(Color(0xFFE2F1E6), Color(0xFF2E7048))
-    Relationship.CLASSMATE -> Tint(Color(0xFFEFE7FF), Color(0xFF6446A0))
-    Relationship.CLIENT -> Tint(Color(0xFFFBEFD3), Color(0xFF8F6416))
-    Relationship.OTHER -> Tint(Color(0xFFECEDF1), Color(0xFF5A5F68))
+private val relationshipPalette = listOf(
+    Tint(Color(0xFFFFE7DE), Color(0xFFB4431F)),
+    Tint(Color(0xFFE3ECFF), Color(0xFF2C56B8)),
+    Tint(Color(0xFFE2F1E6), Color(0xFF2E7048)),
+    Tint(Color(0xFFEFE7FF), Color(0xFF6446A0)),
+    Tint(Color(0xFFFBEFD3), Color(0xFF8F6416)),
+    Tint(Color(0xFFECEDF1), Color(0xFF5A5F68)),
+    Tint(Color(0xFFDFF1F4), Color(0xFF2C7A8C)),
+    Tint(Color(0xFFFBE6EF), Color(0xFF9C3D65)),
+)
+
+fun relationshipTint(colorIndex: Int): Tint {
+    val index = Math.floorMod(colorIndex, relationshipPalette.size)
+    return relationshipPalette[index]
 }
+
+fun relationshipTint(relationship: Relationship): Tint = relationshipTint(relationship.colorIndex)
 
 /**
  * 词条分类色：9 个分类，只以点状出现。

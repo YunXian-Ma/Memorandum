@@ -247,7 +247,7 @@ fun RelationshipChip(
             .padding(horizontal = 12.dp, vertical = 7.dp),
     ) {
         Text(
-            text = relationship.label,
+            text = relationship.name,
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             color = tint.foreground.copy(alpha = contentAlpha),

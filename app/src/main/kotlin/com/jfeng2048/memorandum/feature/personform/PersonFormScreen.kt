@@ -47,7 +47,6 @@ import com.jfeng2048.memorandum.core.designsystem.theme.Canvas
 import com.jfeng2048.memorandum.core.designsystem.theme.DangerRed
 import com.jfeng2048.memorandum.core.designsystem.theme.Ink
 import com.jfeng2048.memorandum.core.designsystem.theme.Muted
-import com.jfeng2048.memorandum.domain.model.Relationship
 
 /**
  * 新建 / 编辑人物。
@@ -109,7 +108,7 @@ fun PersonFormScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         PersonAvatar(
                             name = state.name.ifBlank { "?" },
-                            relationship = state.relationship,
+                            relationship = state.selectedRelationship,
                             size = 62.dp,
                         )
                         Spacer(Modifier.width(16.dp))
@@ -137,13 +136,13 @@ fun PersonFormScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Relationship.entries.forEach { relationship ->
+                        state.relationships.forEach { relationship ->
                             RelationshipChip(
                                 relationship = relationship,
-                                selected = state.relationship == relationship,
+                                selected = state.relationshipId == relationship.id,
                                 onClick = {
                                     viewModel.onEvent(
-                                        PersonFormEvent.RelationshipChanged(relationship),
+                                        PersonFormEvent.RelationshipChanged(relationship.id),
                                     )
                                 },
                             )

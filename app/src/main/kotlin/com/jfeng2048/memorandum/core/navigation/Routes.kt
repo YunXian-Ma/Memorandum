@@ -7,6 +7,7 @@ object Routes {
     const val ARG_ENTRY_ID = "entryId"
 
     const val HOME = "home"
+    const val RELATIONSHIPS = "relationships"
     const val PERSON_CREATE = "person/create"
     const val PERSON_DETAIL = "person/{personId}"
     const val PERSON_EDIT = "person/{personId}/edit"

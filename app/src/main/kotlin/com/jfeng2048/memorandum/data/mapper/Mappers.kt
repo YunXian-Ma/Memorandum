@@ -1,6 +1,7 @@
 package com.jfeng2048.memorandum.data.mapper
 
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
+import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
 import com.jfeng2048.memorandum.data.local.relation.PersonWithEntries
 import com.jfeng2048.memorandum.domain.model.EntryCategory
 import com.jfeng2048.memorandum.domain.model.Gender
@@ -13,7 +14,7 @@ fun PersonWithEntries.toDomain(): Person = Person(
     id = person.id,
     name = person.name,
     avatarUri = person.avatarUri,
-    relationship = Relationship.fromLabel(person.relationship),
+    relationship = relationship?.toDomain() ?: Relationship.Unknown,
     gender = Gender.fromLabel(person.gender),
     bio = person.description.orEmpty(),
     createdAt = person.createdAt,
@@ -21,6 +22,12 @@ fun PersonWithEntries.toDomain(): Person = Person(
     entries = entries
         .sortedByDescending { it.updatedAt }
         .map { it.toDomain() },
+)
+
+fun RelationshipEntity.toDomain(): Relationship = Relationship(
+    id = id,
+    name = name,
+    colorIndex = colorIndex,
 )
 
 fun EntryEntity.toDomain(): PersonEntry = PersonEntry(

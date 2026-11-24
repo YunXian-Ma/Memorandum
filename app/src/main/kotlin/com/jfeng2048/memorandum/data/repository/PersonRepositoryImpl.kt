@@ -2,8 +2,10 @@ package com.jfeng2048.memorandum.data.repository
 
 import com.jfeng2048.memorandum.data.local.dao.EntryDao
 import com.jfeng2048.memorandum.data.local.dao.PersonDao
+import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
+import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
 import com.jfeng2048.memorandum.data.local.prefs.AppPreferences
 import com.jfeng2048.memorandum.data.mapper.toDomain
 import com.jfeng2048.memorandum.data.seed.SeedData
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.map
 @Singleton
 class PersonRepositoryImpl @Inject constructor(
     private val personDao: PersonDao,
+    private val relationshipDao: RelationshipDao,
     private val entryDao: EntryDao,
     private val preferences: AppPreferences,
 ) : PersonRepository {
@@ -33,12 +36,40 @@ class PersonRepositoryImpl @Inject constructor(
     override fun observePerson(personId: Long): Flow<Person?> =
         personDao.observeWithEntries(personId).map { it?.toDomain() }
 
+    override fun observeRelationships(): Flow<List<Relationship>> =
+        relationshipDao.observeAll().map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun createRelationship(name: String): Long {
+        val count = relationshipDao.count()
+        return relationshipDao.insert(
+            RelationshipEntity(
+                name = name,
+                colorIndex = count % Relationship.COLOR_COUNT,
+                sortOrder = count,
+                createdAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
+    override suspend fun renameRelationship(relationshipId: Long, name: String) {
+        val existing = relationshipDao.findById(relationshipId) ?: return
+        relationshipDao.update(existing.copy(name = name))
+    }
+
+    override suspend fun deleteRelationship(relationshipId: Long): Boolean {
+        // 至少保留一个关系，且被人物引用时不允许删除（外键 RESTRICT 的第二道保险）
+        if (relationshipDao.count() <= 1) return false
+        if (personDao.countByRelationship(relationshipId) > 0) return false
+        relationshipDao.deleteById(relationshipId)
+        return true
+    }
+
     override suspend fun getEntry(entryId: Long): PersonEntry? =
         entryDao.findById(entryId)?.toDomain()
 
     override suspend fun createPerson(
         name: String,
-        relationship: Relationship,
+        relationshipId: Long,
         gender: Gender,
         bio: String,
     ): Long {
@@ -46,7 +77,7 @@ class PersonRepositoryImpl @Inject constructor(
         return personDao.insert(
             PersonEntity(
                 name = name,
-                relationship = relationship.label,
+                relationshipId = relationshipId,
                 gender = gender.label,
                 description = bio.takeIf { it.isNotBlank() },
                 createdAt = now,
@@ -58,7 +89,7 @@ class PersonRepositoryImpl @Inject constructor(
     override suspend fun updatePerson(
         personId: Long,
         name: String,
-        relationship: Relationship,
+        relationshipId: Long,
         gender: Gender,
         bio: String,
     ) {
@@ -66,7 +97,7 @@ class PersonRepositoryImpl @Inject constructor(
         personDao.update(
             existing.copy(
                 name = name,
-                relationship = relationship.label,
+                relationshipId = relationshipId,
                 gender = gender.label,
                 description = bio.takeIf { it.isNotBlank() },
                 updatedAt = System.currentTimeMillis(),
@@ -128,7 +159,7 @@ class PersonRepositoryImpl @Inject constructor(
     override suspend fun seedIfNeeded() {
         if (preferences.isSeeded) return
         if (personDao.count() == 0) {
-            SeedData.insert(personDao, entryDao, System.currentTimeMillis())
+            SeedData.insert(personDao, relationshipDao, entryDao, System.currentTimeMillis())
         }
         preferences.isSeeded = true
     }
