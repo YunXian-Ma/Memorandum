@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>人物备忘录 · 方向二 安静地说</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #E4E5E8; }
+  body { font-family: "Noto Sans SC", sans-serif; -webkit-font-smoothing: antialiased; }
+  input, textarea, button { font-family: inherit; }
+  input:focus, textarea:focus { outline: none; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  @keyframes s2fade { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes s2cardpop { from { opacity: 0; transform: translateY(22px) scale(0.955) } to { opacity: 1; transform: none } }
+  @keyframes s2toast {
+    0% { opacity: 0; transform: translate(-50%, 16px) scale(0.94) }
+    60% { opacity: 1; transform: translate(-50%, -2px) scale(1.02) }
+    100% { opacity: 1; transform: translate(-50%, 0) scale(1) }
+  }
+  .s2-row { transition: background 0.16s ease; border-radius: 10px; }
+  .s2-row:hover { background: #FAFAFC; }
+  .s2-row:active { background: #F1F2F6; }
+  .s2-press { transition: transform 0.14s ease; }
+  .s2-press:active { transform: scale(0.94); }
+  .s2-fab { transition: transform 0.2s cubic-bezier(0.2, 1.4, 0.4, 1), box-shadow 0.2s ease; }
+  .s2-fab:hover { transform: scale(1.07); box-shadow: 0 10px 26px rgba(52, 120, 246, 0.46); }
+  .s2-fab:active { transform: scale(0.93); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef } = React;
+
+/* ---------- Android frame ---------- */
+const androidFrameStyles = {
+  wrapper: { display: 'inline-block', padding: 10, background: '#1a1a1a', borderRadius: 44, boxShadow: '0 0 0 2px #2a2a2a, 0 20px 60px rgba(0,0,0,0.3)', position: 'relative' },
+  screen: { position: 'relative', borderRadius: 36, overflow: 'hidden', background: '#fff' },
+  statusBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', fontSize: 14, fontWeight: 500, fontFamily: 'Roboto, sans-serif', zIndex: 20, pointerEvents: 'none' },
+  punchHole: { position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, background: '#000', borderRadius: '50%', zIndex: 30 },
+  statusIcons: { display: 'flex', alignItems: 'center', gap: 6 },
+  batteryText: { fontSize: 11, fontWeight: 600, marginLeft: 2 },
+  content: { position: 'absolute', top: 32, left: 0, right: 0, bottom: 24, overflow: 'auto' },
+  navBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+};
+
+function AndroidFrame({ children, width = 412, height = 892, time = '9:41', battery = 64 }) {
+  return (
+    <div style={androidFrameStyles.wrapper}>
+      <div style={{ ...androidFrameStyles.screen, width, height, background: '#fff' }}>
+        <div style={{ ...androidFrameStyles.statusBar, color: '#1a1a1a' }}>
+          <span>{time}</span>
+          <div style={androidFrameStyles.statusIcons}>
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="currentColor"><rect x="0" y="6" width="2" height="4" rx="0.5" /><rect x="4" y="4" width="2" height="6" rx="0.5" /><rect x="8" y="2" width="2" height="8" rx="0.5" /><rect x="12" y="0" width="2" height="10" rx="0.5" /></svg>
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M7 9a1 1 0 100-2 1 1 0 000 2z" fill="currentColor" /><path d="M3 6a5 5 0 018 0" stroke="currentColor" strokeWidth="1.2" /><path d="M0.5 3.5a11 11 0 0113 0" stroke="currentColor" strokeWidth="1.2" opacity="0.6" /></svg>
+            <div style={{ width: 22, height: 10, border: '1.5px solid currentColor', borderRadius: 2, padding: 1 }}>
+              <div style={{ width: battery + '%', height: '100%', background: 'currentColor', borderRadius: 1 }} />
+            </div>
+            <span style={androidFrameStyles.batteryText}>{battery}%</span>
+          </div>
+        </div>
+        <div style={androidFrameStyles.punchHole} />
+        <div style={androidFrameStyles.content}>{children}</div>
+        <div style={androidFrameStyles.navBar}>
+          <div style={{ width: 100, height: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 999 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- data ---------- */
+const RELS = ['朋友', '同事', '家人', '同学', '客户', '其他'];
+const CATS = ['职业', '兴趣爱好', '性格特点', '生活习惯', '饮食偏好', '教育经历', '工作经历', '重要日期', '其他'];
+const BLUE = '#3478F6';
+const INK = '#1D1D1F';
+const MUTED = '#8A8F9B';
+const HAIR = '#E6E7EC';
+
+/* 关系色：只做底色与文字色，不喧哗 */
+const REL_STYLE = {
+  '朋友': { bg: '#FFE7DE', fg: '#B4431F' },
+  '同事': { bg: '#E3ECFF', fg: '#2C56B8' },
+  '家人': { bg: '#E2F1E6', fg: '#2E7048' },
+  '同学': { bg: '#EFE7FF', fg: '#6446A0' },
+  '客户': { bg: '#FBEFD3', fg: '#8F6416' },
+  '其他': { bg: '#ECEDF1', fg: '#5A5F68' },
+};
+const relStyle = (r) => REL_STYLE[r] || REL_STYLE['其他'];
+
+/* 词条分类色：9 个分类，只以点状出现 */
+const CAT_STYLE = {
+  '职业': '#2C56B8',
+  '兴趣爱好': '#E0703A',
+  '性格特点': '#8B5BB8',
+  '生活习惯': '#3C8C63',
+  '饮食偏好': '#C9932B',
+  '教育经历': '#3A7CA8',
+  '工作经历': '#5C6AC4',
+  '重要日期': '#C4433C',
+  '其他': '#8A8F9B',
+};
+const catColor = (c) => CAT_STYLE[c] || CAT_STYLE['其他'];
+
+const PEOPLE = [
+  { id: 1, name: '陈知远', rel: '朋友', gender: '男', bio: '大学室友，做建筑设计。周三晚上通常在城西球场。', created: '2025.03.12', updated: '11.18', entries: [
+    { id: 11, title: '篮球', cat: '兴趣爱好', content: '每周三晚在城西打半场，穿 24 号。膝盖有旧伤，别约太激烈的。', created: '2025.03.12', updated: '11.18' },
+    { id: 12, title: '建筑设计', cat: '职业', content: '在一家做旧改的小事务所，最近跟一个学校改造项目。', created: '2025.03.12', updated: '11.12' },
+    { id: 13, title: '不吃香菜', cat: '饮食偏好', content: '点外卖要备注，火锅蘸料也不放。', created: '2025.05.02', updated: '10.30' },
+    { id: 14, title: '3 月 12 日生日', cat: '重要日期', content: '去年送的是一双球鞋，今年可以换别的。', created: '2025.03.12', updated: '10.02' },
+    { id: 15, title: '慢热', cat: '性格特点', content: '第一次见面话不多，熟了之后停不下来。', created: '2025.04.08', updated: '09.15' },
+  ]},
+  { id: 2, name: '林嘉禾', rel: '同事', gender: '女', bio: 'Android 组同事，管性能和启动优化。说话很快。', created: '2025.06.01', updated: '11.20', entries: [
+    { id: 21, title: 'Android 开发工程师', cat: '职业', content: '负责性能与启动优化，Kotlin 和 Compose 都很熟。', created: '2025.06.01', updated: '11.20' },
+    { id: 22, title: '浅烘手冲', cat: '饮食偏好', content: '不加糖不加奶。下午三点后不喝，会睡不着。', created: '2025.06.03', updated: '11.17' },
+    { id: 23, title: '六点起床', cat: '生活习惯', content: '先去跑五公里，九点前一定在工位。', created: '2025.06.10', updated: '11.09' },
+    { id: 24, title: '浙江大学 计算机', cat: '教育经历', content: '2016 级，和我在同一个社团。', created: '2025.07.02', updated: '10.21' },
+    { id: 25, title: '猫叫「电量」', cat: '兴趣爱好', content: '一只橘猫，照片存在她工位显示器上。', created: '2025.08.11', updated: '09.28' },
+  ]},
+  { id: 3, name: '苏晚', rel: '同学', gender: '女', bio: '高中同学，现在在杭州画插画。不太回消息，但会寄明信片。', created: '2025.02.18', updated: '11.15', entries: [
+    { id: 31, title: '插画师', cat: '职业', content: '接书籍和杂志的活，最近在画一本植物图鉴。', created: '2025.02.18', updated: '11.15' },
+    { id: 32, title: '街头摄影', cat: '兴趣爱好', content: '随身一台 X100V，只拍傍晚和下雨天。', created: '2025.02.20', updated: '11.03' },
+    { id: 33, title: '内向但不怕生', cat: '性格特点', content: '人多的场合话少，一对一能聊很久。', created: '2025.03.05', updated: '10.18' },
+    { id: 34, title: '11 月 2 日生日', cat: '重要日期', content: '去年寄了一张她画的明信片。', created: '2025.03.05', updated: '10.05' },
+  ]},
+  { id: 4, name: '周叙白', rel: '客户', gender: '男', bio: '甲方项目负责人。沟通直接，不喜欢电话。', created: '2025.09.02', updated: '11.21', entries: [
+    { id: 41, title: '项目经理', cat: '职业', content: '甲方这边的负责人，节点卡得很死。', created: '2025.09.02', updated: '11.21' },
+    { id: 42, title: '沟通直接', cat: '性格特点', content: '不喜欢寒暄，邮件一句话能说完就一句话。', created: '2025.09.04', updated: '11.10' },
+    { id: 43, title: '不吃辣', cat: '饮食偏好', content: '团建点菜要留两个不辣的。', created: '2025.09.08', updated: '10.25' },
+  ]},
+  { id: 5, name: '外婆', rel: '家人', gender: '女', bio: '住临安。五点起床，春天一定做腌笃鲜。', created: '2025.01.06', updated: '11.19', entries: [
+    { id: 51, title: '腌笃鲜', cat: '饮食偏好', content: '春天一定做，咸肉提前两天泡。', created: '2025.01.06', updated: '11.19' },
+    { id: 52, title: '五点起床', cat: '生活习惯', content: '先去菜场，回来才叫我们起床。', created: '2025.01.06', updated: '11.08' },
+    { id: 53, title: '膝盖不好', cat: '其他', content: '上楼要扶栏杆，别让她拎重的东西。', created: '2025.02.11', updated: '10.27' },
+    { id: 54, title: '农历八月十六生日', cat: '重要日期', content: '今年是十月六号，记得打电话。', created: '2025.02.11', updated: '10.01' },
+  ]},
+  { id: 6, name: '何岸', rel: '同事', gender: '男', bio: '产品经理，健身，午饭只吃轻食。', created: '2025.10.08', updated: '11.22', entries: [
+    { id: 61, title: '产品经理', cat: '职业', content: '负责这一版的需求，改稿很快。', created: '2025.10.08', updated: '11.22' },
+    { id: 62, title: '健身', cat: '兴趣爱好', content: '一周五练，午饭只吃轻食。', created: '2025.10.09', updated: '11.11' },
+    { id: 63, title: '咖啡因不耐受', cat: '饮食偏好', content: '只喝 decaf，下午茶别点美式。', created: '2025.10.15', updated: '10.29' },
+  ]},
+];
+
+const s2 = {
+  screen: { position: 'relative', minHeight: '100%', background: '#fff', color: INK },
+  nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px' },
+  navBack: { display: 'flex', alignItems: 'center', gap: 2, color: BLUE, fontSize: 16, cursor: 'pointer' },
+  action: { color: BLUE, fontSize: 15, fontWeight: 500, cursor: 'pointer' },
+  avatar: { borderRadius: '50%', background: '#EFF0F4', color: '#4C4F57', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flex: 'none' },
+  sectionTitle: { fontSize: 12, letterSpacing: 1.4, fontWeight: 700, color: MUTED },
+  input: { width: '100%', border: 'none', background: 'transparent', fontSize: 16, color: INK, padding: '12px 0', lineHeight: 1.5 },
+  group: { background: '#F7F7FA', borderRadius: 12, padding: '4px 14px', marginTop: 8 },
+  bigBtn: (on) => ({ width: '100%', border: 'none', borderRadius: 12, padding: '15px 0', fontSize: 16, fontWeight: 600, background: on ? BLUE : '#C9CACE', color: '#fff', cursor: on ? 'pointer' : 'default', textAlign: 'center' }),
+};
+
+function S2Avatar({ person, size = 44, ring = false }) {
+  const rv = relStyle(person.rel);
+  return (
+    <div style={{
+      ...s2.avatar, width: size, height: size, fontSize: size * 0.38,
+      background: rv.bg, color: rv.fg,
+      boxShadow: ring ? '0 0 0 2.5px #fff, 0 0 0 4.5px ' + rv.fg + '30' : 'none',
+    }}>{person.name[0]}</div>
+  );
+}
+
+/* ---------- home ---------- */
+function S2Home({ people, filter, setFilter, query, setQuery, sort, setSort, onOpen, onAdd, onRandom }) {
+  let list = people.filter(p => filter === '全部' || p.rel === filter);
+  if (query.trim()) {
+    const q = query.trim();
+    list = list.filter(p => p.name.includes(q) || p.bio.includes(q) || p.entries.some(e => e.title.includes(q) || (e.content || '').includes(q)));
+  }
+  if (sort === '姓名') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+  const total = people.reduce((n, p) => n + p.entries.length, 0);
+  return (
+    <div style={{ ...s2.screen, paddingBottom: 90 }}>
+      <div style={{ padding: '18px 20px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div style={{ fontSize: 33, fontWeight: 700, letterSpacing: -0.5 }}>人物</div>
+          <div onClick={() => setSort(sort === '更新' ? '姓名' : '更新')} style={{ fontSize: 12.5, color: BLUE, cursor: 'pointer' }}>
+            {sort === '更新' ? '最近更新' : '按姓名'} ⌄
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+          <div style={{ fontSize: 12.5, color: MUTED }}>{people.length} 个人 · {total} 条词条</div>
+          <div className="s2-press" onClick={onRandom} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#5F636B', background: '#F2F2F6', borderRadius: 999, padding: '5px 10px 5px 8px', cursor: 'pointer' }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M1.2 2.6h1.9l5.3 6.8h2.4" stroke="#5F636B" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M1.2 9.4h1.9l1.5-1.9" stroke="#5F636B" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M8.9 1.4l1.9 1.2-1.9 1.2" stroke="#5F636B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8.9 8.2l1.9 1.2-1.9 1.2" stroke="#5F636B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            随便翻一个
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F2F2F7', borderRadius: 10, padding: '0 11px', marginTop: 14 }}>
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke={MUTED} strokeWidth="1.6" /><path d="M11 11l3.4 3.4" stroke={MUTED} strokeWidth="1.6" /></svg>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜名字、简介或词条" style={{ border: 'none', background: 'transparent', padding: '10px 0', fontSize: 14, width: '100%', color: INK }} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 18, overflowX: 'auto', marginTop: 14, paddingBottom: 9, borderBottom: '1px solid ' + HAIR }}>
+          {['全部', ...RELS].map(r => {
+            const c = r === '全部' ? BLUE : relStyle(r).fg;
+            return (
+              <div key={r} onClick={() => setFilter(r)}
+                style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13.5, fontWeight: filter === r ? 700 : 500, color: filter === r ? c : '#6E727B', cursor: 'pointer', paddingBottom: 8, marginBottom: -10, borderBottom: '2px solid ' + (filter === r ? c : 'transparent') }}>
+                {r !== '全部' && <span style={{ width: 6, height: 6, borderRadius: '50%', background: relStyle(r).fg, opacity: filter === r ? 1 : 0.45 }} />}
+                {r}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ padding: '2px 20px 0' }}>
+        {list.map((p, i) => {
+          const rv = relStyle(p.rel);
+          return (
+            <div key={p.id} className="s2-row" onClick={() => onOpen(p.id)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 8px', margin: '0 -8px', borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + HAIR, cursor: 'pointer' }}>
+              <S2Avatar person={p} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 16.5, fontWeight: 600 }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: '#6E727B', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.bio}</div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                  <span style={{ color: rv.fg, fontWeight: 600 }}>{p.rel}</span> · {p.entries.length} 条 · {p.updated}
+                </div>
+              </div>
+              <div style={{ color: '#C3C6CE', fontSize: 18, marginRight: 2 }}>›</div>
+            </div>
+          );
+        })}
+        {list.length === 0 && (
+          <div style={{ padding: '40px 0 48px', textAlign: 'center' }}>
+            <div style={{ position: 'relative', width: 72, height: 56, margin: '0 auto 18px' }}>
+              <div style={{ position: 'absolute', left: 6, top: 2, width: 50, height: 32, background: '#EDEEF2', borderRadius: 6, transform: 'rotate(-7deg)' }} />
+              <div style={{ position: 'absolute', left: 16, top: 7, width: 50, height: 32, background: '#F7F7FA', border: '1px solid ' + HAIR, borderRadius: 6, transform: 'rotate(5deg)' }} />
+              <div style={{ position: 'absolute', left: 11, top: 13, width: 52, height: 36, background: '#fff', border: '1px solid #DCDDE3', borderRadius: 7 }}>
+                <div style={{ width: 26, height: 2, background: '#E4E5EA', borderRadius: 2, margin: '11px 0 0 10px' }} />
+                <div style={{ width: 18, height: 2, background: '#EDEEF2', borderRadius: 2, margin: '5px 0 0 10px' }} />
+              </div>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>这个人还没被记下来</div>
+            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 7, lineHeight: 1.7 }}>换个名字试试，或者从右下角新建一个。</div>
+          </div>
+        )}
+      </div>
+
+      <div className="s2-fab" onClick={onAdd} style={{ position: 'absolute', right: 20, bottom: 22, width: 56, height: 56, borderRadius: '50%', background: BLUE, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 29, fontWeight: 300, boxShadow: '0 6px 18px rgba(52,120,246,0.4)', cursor: 'pointer' }}>＋</div>
+    </div>
+  );
+}
+
+/* ---------- detail ---------- */
+function S2Detail({ person, onBack, onEdit, onAddEntry, onOpenEntry }) {
+  const cats = [];
+  person.entries.forEach(e => { if (!cats.includes(e.cat)) cats.push(e.cat); });
+  const [cat, setCat] = useState('全部');
+  const list = cat === '全部' ? person.entries : person.entries.filter(e => e.cat === cat);
+  const rv = relStyle(person.rel);
+  return (
+    <div style={{ ...s2.screen, paddingBottom: 30 }}>
+      <div style={s2.nav}>
+        <div style={s2.navBack} onClick={onBack}><span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> 人物</div>
+        <div style={s2.action} onClick={onEdit}>编辑</div>
+      </div>
+
+      <div style={{ padding: '2px 20px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+          <S2Avatar person={person} size={64} ring />
+          <div>
+            <div style={{ fontFamily: '"Noto Serif SC", serif', fontSize: 29, fontWeight: 700, letterSpacing: 0.5 }}>{person.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 7 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: rv.fg, background: rv.bg, borderRadius: 999, padding: '2px 9px' }}>{person.rel}</span>
+              <span style={{ fontSize: 12, color: MUTED }}>{person.gender} · 更新于 {person.updated}</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: 14, lineHeight: 1.75, color: '#4C4F57', marginTop: 16 }}>{person.bio}</div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
+          <div style={{ flex: 'none', background: rv.bg, color: rv.fg, borderRadius: 10, padding: '9px 13px' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{person.entries.length}</div>
+            <div style={{ fontSize: 10.5, marginTop: 2, opacity: 0.82 }}>条词条</div>
+          </div>
+          <div style={{ flex: 'none', background: '#F4F4F7', color: '#4C4F57', borderRadius: 10, padding: '9px 13px' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{cats.length}</div>
+            <div style={{ fontSize: 10.5, color: '#8A8F9B', marginTop: 2 }}>个分类</div>
+          </div>
+          <div style={{ flex: 1, background: '#F4F4F7', color: '#4C4F57', borderRadius: 10, padding: '9px 13px' }}>
+            <div style={{ fontFamily: 'Archivo, sans-serif', fontSize: 13.5, fontWeight: 600, lineHeight: 1.5 }}>{person.created}</div>
+            <div style={{ fontSize: 10.5, color: '#8A8F9B', marginTop: 2 }}>建档</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
+          <div style={{ ...s2.sectionTitle, flex: 'none', whiteSpace: 'nowrap' }}>词条</div>
+          <div style={{ display: 'flex', gap: 11, overflowX: 'auto', marginLeft: 12 }}>
+            {['全部', ...cats].map(c => (
+              <div key={c} onClick={() => setCat(c)} style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: cat === c ? INK : '#8A8F9B', fontWeight: cat === c ? 600 : 400, cursor: 'pointer' }}>
+                {c !== '全部' && <span style={{ width: 6, height: 6, borderRadius: '50%', background: catColor(c), opacity: cat === c ? 1 : 0.4 }} />}
+                {c}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 2 }}>
+          {list.map((e, i) => (
+            <div key={e.id} className="s2-row" onClick={() => onOpenEntry(e.id)} style={{ padding: '13px 8px', margin: '0 -8px', borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + HAIR, cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: catColor(e.cat), marginTop: 7, flex: 'none' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 500 }}>{e.title}</div>
+                <div style={{ fontSize: 11.5, color: MUTED, marginTop: 4 }}>{e.cat} · {e.updated}</div>
+              </div>
+              <div style={{ color: '#C3C6CE', fontSize: 18, marginTop: -1 }}>›</div>
+            </div>
+          ))}
+        </div>
+
+        <div onClick={onAddEntry} style={{ marginTop: 18, textAlign: 'center', color: BLUE, fontSize: 15, fontWeight: 500, padding: '10px 0', cursor: 'pointer' }}>＋ 添加词条</div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- expanded entry card (Things 3 mechanism) ---------- */
+function S2EntryCard({ person, entry, onClose, onEdit, onDelete }) {
+  const cc = catColor(entry.cat);
+  return (
+    <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(20,20,24,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 60, animation: 's2fade 0.18s ease both' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#fff', borderRadius: 16, padding: '14px 22px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 26px 60px rgba(0,0,0,0.22)', transformOrigin: '50% 60%', animation: 's2cardpop 0.32s cubic-bezier(0.2, 1.2, 0.35, 1) both' }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: '#E2E3E8', margin: '0 auto 16px' }} />
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, letterSpacing: 1, color: cc, fontWeight: 700, background: cc + '18', borderRadius: 999, padding: '3px 10px 3px 8px' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: cc }} />
+          {entry.cat}
+        </div>
+        <div style={{ fontSize: 21, fontWeight: 700, marginTop: 7, lineHeight: 1.35 }}>{entry.title}</div>
+        <div style={{ fontSize: 14.5, lineHeight: 1.8, color: '#3E4147', marginTop: 12 }}>{entry.content || '还没有详细描述。'}</div>
+        <div style={{ fontFamily: 'Archivo, sans-serif', fontSize: 10.5, color: MUTED, marginTop: 16 }}>{entry.created} → {entry.updated}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 20, paddingTop: 15, borderTop: '1px solid ' + HAIR }}>
+          <div style={{ fontSize: 14, color: BLUE, cursor: 'pointer' }} onClick={onEdit}>编辑</div>
+          <div style={{ fontSize: 14, color: '#E5484D', cursor: 'pointer' }} onClick={onDelete}>删除</div>
+          <div style={{ marginLeft: 'auto', fontSize: 14, color: MUTED, cursor: 'pointer' }} onClick={onClose}>完成</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- entry form ---------- */
+function S2EntryForm({ person, entry, onSave, onBack }) {
+  const [title, setTitle] = useState(entry ? entry.title : '周末爬山');
+  const [cat, setCat] = useState(entry ? entry.cat : '兴趣爱好');
+  const [content, setContent] = useState(entry ? entry.content : '最近在走临安的山，下次可以约。');
+  const ok = title.trim().length > 0;
+  return (
+    <div style={{ ...s2.screen, paddingBottom: 30 }}>
+      <div style={s2.nav}>
+        <div style={s2.navBack} onClick={onBack}><span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {person.name}</div>
+        <div style={{ ...s2.action, color: ok ? BLUE : '#C3C6CE' }} onClick={() => ok && onSave({ title, cat, content })}>保存</div>
+      </div>
+      <div style={{ padding: '4px 20px 0' }}>
+        <div style={{ fontSize: 27, fontWeight: 700 }}>{entry ? '编辑词条' : '新词条'}</div>
+        <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>给 {person.name} 记一条，之后想得起来。</div>
+
+        <div style={{ ...s2.sectionTitle, marginTop: 26 }}>名称</div>
+        <div style={s2.group}>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="比如：喜欢篮球" style={s2.input} />
+        </div>
+
+        <div style={{ ...s2.sectionTitle, marginTop: 22 }}>分类</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+          {CATS.map(c => {
+            const cc = catColor(c);
+            const on = cat === c;
+            return (
+              <div key={c} onClick={() => setCat(c)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, fontSize: 13, fontWeight: on ? 600 : 500, background: on ? cc + '18' : '#F2F2F6', color: on ? cc : '#5A5E66', boxShadow: on ? '0 0 0 1.5px ' + cc : 'none', cursor: 'pointer' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: cc, opacity: on ? 1 : 0.5 }} />
+                {c}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ ...s2.sectionTitle, marginTop: 22 }}>详细描述 · 选填</div>
+        <div style={{ ...s2.group, padding: '4px 14px 10px' }}>
+          <textarea value={content} onChange={e => setContent(e.target.value)} rows={5} placeholder="补充一点，之后会感谢现在的自己。"
+            style={{ ...s2.input, resize: 'none', lineHeight: 1.75, fontSize: 15 }} />
+        </div>
+
+        <div style={{ marginTop: 28 }}>
+          <div style={s2.bigBtn(ok)} onClick={() => ok && onSave({ title, cat, content })}>保存词条</div>
+          <div style={{ fontSize: 11.5, color: MUTED, textAlign: 'center', marginTop: 10 }}>保存后回到 {person.name}，下次就不用再问一遍。</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- person form ---------- */
+function S2PersonForm({ person, isNew, onSave, onBack }) {
+  const [name, setName] = useState(person ? person.name : '');
+  const [rel, setRel] = useState(person ? person.rel : '朋友');
+  const [gender, setGender] = useState(person ? person.gender : '未知');
+  const [bio, setBio] = useState(person ? person.bio : '');
+  const ok = name.trim().length > 0;
+  const rv = relStyle(rel);
+  return (
+    <div style={{ ...s2.screen, paddingBottom: 30 }}>
+      <div style={s2.nav}>
+        <div style={s2.navBack} onClick={onBack}><span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> 取消</div>
+        <div style={{ ...s2.action, color: ok ? BLUE : '#C3C6CE' }} onClick={() => ok && onSave({ name, rel, gender, bio })}>{isNew ? '创建' : '保存'}</div>
+      </div>
+      <div style={{ padding: '4px 20px 0' }}>
+        <div style={{ fontSize: 27, fontWeight: 700 }}>{isNew ? '记一个人' : '编辑人物'}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 22 }}>
+          <div style={{ ...s2.avatar, width: 62, height: 62, fontSize: 24, background: rv.bg, color: rv.fg }}>{name ? name[0] : '?'}</div>
+          <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.65 }}>头像先跟着关系走<br />之后可以接系统相册</div>
+        </div>
+
+        <div style={{ ...s2.sectionTitle, marginTop: 24 }}>姓名 · 必填</div>
+        <div style={s2.group}><input value={name} onChange={e => setName(e.target.value)} placeholder="写你平时怎么叫他" style={s2.input} /></div>
+
+        <div style={{ ...s2.sectionTitle, marginTop: 22 }}>关系</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+          {RELS.map(r => {
+            const st = relStyle(r);
+            const on = rel === r;
+            return (
+              <div key={r} onClick={() => setRel(r)} style={{ padding: '7px 12px', borderRadius: 999, fontSize: 13, fontWeight: on ? 600 : 500, background: st.bg, color: st.fg, opacity: on ? 1 : 0.62, boxShadow: on ? '0 0 0 1.5px ' + st.fg : 'none', cursor: 'pointer', flex: 'none' }}>{r}</div>
+            );
+          })}
+        </div>
+
+        <div style={{ ...s2.sectionTitle, marginTop: 22 }}>性别</div>
+        <div style={{ display: 'flex', background: '#F2F2F6', borderRadius: 10, padding: 3, marginTop: 10 }}>
+          {['男', '女', '未知'].map(g => (
+            <div key={g} onClick={() => setGender(g)} style={{ flex: 1, textAlign: 'center', padding: '8px 0', fontSize: 13.5, fontWeight: gender === g ? 600 : 500, color: gender === g ? INK : '#6E727B', background: gender === g ? '#fff' : 'transparent', borderRadius: 8, boxShadow: gender === g ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer' }}>{g}</div>
+          ))}
+        </div>
+
+        <div style={{ ...s2.sectionTitle, marginTop: 22 }}>个人简介 · 选填</div>
+        <div style={{ ...s2.group, padding: '4px 14px 10px' }}>
+          <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} placeholder="怎么认识的、现在在做什么。"
+            style={{ ...s2.input, resize: 'none', lineHeight: 1.75, fontSize: 15 }} />
+        </div>
+
+        <div style={{ marginTop: 28 }}>
+          <div style={s2.bigBtn(ok)} onClick={() => ok && onSave({ name, rel, gender, bio })}>{isNew ? '创建人物' : '保存修改'}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- phone ---------- */
+function S2Phone({ initial, initialPid = 1, initialEid = null }) {
+  const [people, setPeople] = useState(PEOPLE);
+  const [screen, setScreen] = useState(initial);
+  const [pid, setPid] = useState(initialPid);
+  const [eid, setEid] = useState(initialEid);
+  const [openEntry, setOpenEntry] = useState(initial === 'card' ? initialEid : null);
+  const [filter, setFilter] = useState('全部');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('更新');
+  const [confirm, setConfirm] = useState(null);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2100);
+  };
+
+  const randomOpen = () => {
+    const pool = people.filter(p => p.id !== pid);
+    const arr = pool.length ? pool : people;
+    const p = arr[Math.floor(Math.random() * arr.length)];
+    setPid(p.id);
+    setScreen('detail');
+    showToast('翻到「' + p.name + '」· ' + p.rel);
+  };
+
+  const person = people.find(p => p.id === pid) || people[0];
+  const entry = person ? person.entries.find(e => e.id === eid) : null;
+
+  const saveEntry = (data) => {
+    setPeople(prev => prev.map(p => {
+      if (p.id !== pid) return p;
+      if (eid) return { ...p, entries: p.entries.map(e => e.id === eid ? { ...e, ...data, updated: '今天' } : e), updated: '今天' };
+      return { ...p, entries: [{ id: Date.now(), ...data, created: '2025.11.24', updated: '今天' }, ...p.entries], updated: '今天' };
+    }));
+    setOpenEntry(null);
+    setScreen('detail');
+    showToast(eid ? '已更新「' + data.title + '」' : '记下了「' + data.title + '」');
+  };
+
+  const deleteEntry = () => {
+    setPeople(prev => prev.map(p => p.id === pid ? { ...p, entries: p.entries.filter(e => e.id !== eid) } : p));
+    setOpenEntry(null); setConfirm(null); setScreen('detail');
+  };
+
+  const savePerson = (data) => {
+    if (screen === 'newPerson') {
+      const id = Date.now();
+      setPeople(prev => [{ id, ...data, created: '2025.11.24', updated: '今天', entries: [] }, ...prev]);
+      setPid(id); setScreen('detail');
+      showToast('新建了「' + data.name + '」');
+    } else {
+      setPeople(prev => prev.map(p => p.id === pid ? { ...p, ...data, updated: '今天' } : p));
+      setScreen('detail');
+    }
+  };
+
+  let body = null;
+  if (screen === 'home') body = <S2Home people={people} filter={filter} setFilter={setFilter} query={query} setQuery={setQuery} sort={sort} setSort={setSort} onOpen={id => { setPid(id); setScreen('detail'); }} onAdd={() => setScreen('newPerson')} onRandom={randomOpen} />;
+  else if (screen === 'detail') body = <S2Detail person={person} onBack={() => setScreen('home')} onEdit={() => setScreen('editPerson')} onAddEntry={() => { setEid(null); setScreen('entryForm'); }} onOpenEntry={id => { setEid(id); setOpenEntry(id); }} />;
+  else if (screen === 'card') body = <S2Detail person={person} onBack={() => setScreen('home')} onEdit={() => setScreen('editPerson')} onAddEntry={() => { setEid(null); setScreen('entryForm'); }} onOpenEntry={id => { setEid(id); setOpenEntry(id); }} />;
+  else if (screen === 'entryForm') body = <S2EntryForm person={person} entry={entry} onSave={saveEntry} onBack={() => setScreen(eid ? 'detail' : 'detail')} />;
+  else if (screen === 'editPerson') body = <S2PersonForm person={person} isNew={false} onSave={savePerson} onBack={() => setScreen('detail')} />;
+  else if (screen === 'newPerson') body = <S2PersonForm person={null} isNew onSave={savePerson} onBack={() => setScreen('home')} />;
+
+  return (
+    <AndroidFrame time="9:41" battery={64}>
+      {body}
+      {openEntry && (
+        <S2EntryCard person={person} entry={person.entries.find(e => e.id === openEntry) || person.entries[0]}
+          onClose={() => { setOpenEntry(null); if (screen === 'card') setScreen('detail'); }}
+          onEdit={() => { setEid(openEntry); setOpenEntry(null); setScreen('entryForm'); }}
+          onDelete={() => setConfirm('entry')} />
+      )}
+      {confirm && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(20,20,24,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 30, zIndex: 70 }}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: '22px 20px 16px', width: '100%' }}>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>删除这条词条？</div>
+            <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.7, marginTop: 8 }}>只删除这一条，人物档案会保留。删除后不可恢复。</div>
+            <div style={{ display: 'flex', marginTop: 18, borderTop: '1px solid ' + HAIR }}>
+              <div onClick={() => setConfirm(null)} style={{ flex: 1, textAlign: 'center', padding: '14px 0 2px', fontSize: 15, color: MUTED, cursor: 'pointer' }}>取消</div>
+              <div onClick={deleteEntry} style={{ flex: 1, textAlign: 'center', padding: '14px 0 2px', fontSize: 15, color: '#E5484D', fontWeight: 600, cursor: 'pointer' }}>删除</div>
+            </div>
+          </div>
+        </div>
+      )}
+      {toast && (
+        <div style={{ position: 'absolute', left: '50%', bottom: 44, zIndex: 90, transform: 'translate(-50%, 0)', background: '#1D1D1F', color: '#fff', borderRadius: 999, padding: '10px 17px 10px 13px', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap', boxShadow: '0 12px 30px rgba(0,0,0,0.24)', animation: 's2toast 0.36s cubic-bezier(0.2, 1.3, 0.4, 1) both' }}>
+          <span style={{ width: 17, height: 17, borderRadius: '50%', background: '#37C978', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>✓</span>
+          {toast}
+        </div>
+      )}
+    </AndroidFrame>
+  );
+}
+
+/* ---------- flow showboard ---------- */
+function S2Board() {
+  const theme = { bg: '#E4E5E8', fg: '#1D1D1F', muted: '#6E727B', accent: BLUE, font: '"Noto Sans SC", sans-serif' };
+  const sc = 0.78, PW = 432 * sc, PH = 912 * sc, LABEL = 56;
+  const pos = [
+    { s: { label: '人物首页', note: '关系色头像、简介一行，还能「随便翻一个」', node: <S2Phone initial="home" /> }, x: 56, y: 240 },
+    { s: { label: '人物详情', note: '关系色标头 + 词条分类色点', node: <S2Phone initial="detail" initialPid={1} /> }, x: 500, y: 240 },
+    { s: { label: '词条浮起', note: '分类色标签，卡片带一点弹入', node: <S2Phone initial="card" initialPid={1} initialEid={11} /> }, x: 944, y: 240 },
+    { s: { label: '添加词条', note: '选中哪个分类，就用哪个分类的颜色', node: <S2Phone initial="entryForm" initialPid={1} /> }, x: 500, y: 1150 },
+    { s: { label: '编辑人物', note: '关系 tag 直接用关系色，改完即所见', node: <S2Phone initial="editPerson" initialPid={1} /> }, x: 944, y: 1150 },
+  ];
+  const H = 1150 + LABEL + PH + 80;
+  const yTop = 240 + LABEL + PH * 0.44;
+  const line = (x1, x2, y, via) => (
+    <g key={via}>
+      <path d={'M' + x1 + ',' + y + ' L' + x2 + ',' + y} fill="none" stroke={BLUE} strokeWidth="1.6" strokeDasharray="5 6" />
+      <circle cx={x2} cy={y} r="3.5" fill={BLUE} />
+      <text x={(x1 + x2) / 2} y={y - 11} textAnchor="middle" fontSize="12.5" fill="#5F636B">{via}</text>
+    </g>
+  );
+  return (
+    <div style={{ position: 'relative', width: 1440, height: H, background: theme.bg, color: theme.fg, fontFamily: theme.font, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#CFD1D8 1px, transparent 1px)', backgroundSize: '26px 26px', opacity: 0.55, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: 56, top: 52, width: 780 }}>
+        <div style={{ fontSize: 14, color: BLUE, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>方向二 · 安静地说 · 趣味版</div>
+        <div style={{ fontSize: 56, fontWeight: 800, lineHeight: 1.06, letterSpacing: -1 }}>安静一点，但别太乖。</div>
+        <div style={{ fontSize: 16, lineHeight: 1.7, opacity: 0.78, marginTop: 16 }}>白纸和发丝线还在。关系有了颜色，词条有了颜色，首页可以「随便翻一个」——翻到谁就看谁，像抽到一张旧卡片。保存时冒出一句「记下了」，安静，但不无聊。</div>
+      </div>
+      <svg width="1440" height={H} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        {line(56 + PW, 500, yTop, '点「陈知远」')}
+        {line(500 + PW, 944, yTop, '点任意词条')}
+      </svg>
+      {pos.map((p, i) => (
+        <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, width: PW }}>
+          <div style={{ width: PW, marginBottom: 10 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{p.s.label}</div>
+            <div style={{ fontSize: 13, color: theme.muted, marginTop: 2 }}>{p.s.note}</div>
+          </div>
+          <div style={{ width: PW, height: PH }}>
+            <div style={{ transform: 'scale(' + sc + ')', transformOrigin: '0 0', width: 432 }}>{p.s.node}</div>
+          </div>
+        </div>
+      ))}
+      <div style={{ position: 'absolute', left: 56, top: 1178, width: 380 }}>
+        <div style={{ fontSize: 10, letterSpacing: 3, color: BLUE, fontWeight: 700, marginBottom: 14 }}>REFERENCE</div>
+        <div style={{ fontSize: 12.5, color: theme.muted, lineHeight: 2 }}>
+          参照 Things 3（Cultured Code，id 904280696）<br />
+          借：行 → 浮起卡片的展开、缩进发丝线、<br />
+          右下角单动作按钮<br />
+          不借：蓝色勾选框与系统字体
+        </div>
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #D3D5DA', fontSize: 12, color: theme.muted, lineHeight: 1.9 }}>
+          人名用 Noto Serif SC 作声音<br />
+          正文与控件全是无衬线<br />
+          蓝点只留给界面动作
+        </div>
+
+        <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #D3D5DA' }}>
+          <div style={{ fontSize: 10, letterSpacing: 3, color: BLUE, fontWeight: 700, marginBottom: 12 }}>RELATION</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {RELS.map(r => (
+              <span key={r} style={{ fontSize: 11.5, fontWeight: 600, color: relStyle(r).fg, background: relStyle(r).bg, padding: '3px 10px', borderRadius: 999 }}>{r}</span>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 10, letterSpacing: 3, color: BLUE, fontWeight: 700, margin: '18px 0 11px' }}>CATEGORY</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 13px' }}>
+            {CATS.map(c => (
+              <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: '#5F636B' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: catColor(c) }} />{c}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ position: 'absolute', left: 56, bottom: 26, fontSize: 12, color: theme.muted }}>form 来自内容：这个 App 的动作是「想起来一条，记下来」，所以一屏只服务一次记录。</div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<S2Board />);
+</script>
+</body>
+</html>
