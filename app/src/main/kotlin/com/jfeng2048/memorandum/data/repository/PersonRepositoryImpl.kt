@@ -158,8 +158,9 @@ class PersonRepositoryImpl @Inject constructor(
 
     override suspend fun seedIfNeeded() {
         if (preferences.isSeeded) return
-        if (personDao.count() == 0) {
-            SeedData.insert(personDao, relationshipDao, entryDao, System.currentTimeMillis())
+        // 只补默认关系，不预置人物与词条；关系表为空时写入，避免用户删光后又被灌回
+        if (relationshipDao.count() == 0) {
+            SeedData.insertDefaultRelationships(relationshipDao, System.currentTimeMillis())
         }
         preferences.isSeeded = true
     }

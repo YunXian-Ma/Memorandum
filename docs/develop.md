@@ -55,7 +55,7 @@ Memorandum/
 │       │       ├── data/
 │       │       │   ├── local/           # entity / dao / relation / AppDatabase / prefs
 │       │       │   ├── mapper/          # Entity → Domain
-│       │       │   ├── seed/            # 演示数据
+│       │       │   ├── seed/            # 默认关系种子
 │       │       │   └── repository/      # PersonRepositoryImpl
 │       │       ├── domain/
 │       │       │   ├── model/           # Person、PersonEntry、枚举
@@ -220,11 +220,11 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 
 - 数据库名 `memorandum.db`，`version = 2`（v2 新增 `relationships` 表、`persons.relationship` 改为 `relationshipId`），`exportSchema = false`。
 - 当前使用 `fallbackToDestructiveMigration(dropAllTables = true)`：**升级版本会清空数据**。正式发版前应改为：`exportSchema = true` + 手写 `Migration`，或引入 `AutoMigration`。
-- 演示数据标记使用 `SharedPreferences("memorandum_prefs")` 的 `seed_done_v2` 布尔值。key 带版本号是为了让清库升级后能重新写入默认关系与演示数据；标记为 true 后即使用户删光所有人物，也不会再自动灌入。
+- 种子标记使用 `SharedPreferences("memorandum_prefs")` 的 `seed_done_v2` 布尔值。key 带版本号是为了让清库升级后能重新写入默认关系；标记为 true 后即使用户把这些关系删光，也不会再自动恢复。
 
-### 4.4 演示数据
+### 4.4 种子数据
 
-[SeedData.kt](file:///Users/kika/code/android_project/demo/Memorandum/app/src/main/kotlin/com/jfeng2048/memorandum/data/seed/SeedData.kt) 先写入 6 个默认关系（朋友/同事/家人/同学/客户/其他），再写入 6 个人物、24 条词条；人物通过「关系名 → 关系主键」建立外键。时间按「距今 N 天 / N 小时」推算，保证首页能同时出现「今天」「昨天」「11.20」三种时间文案。写入发生在 `App.onCreate()` 的 IO 协程里，不阻塞首帧。
+[SeedData.kt](file:///Users/kika/code/android_project/demo/Memorandum/app/src/main/kotlin/com/jfeng2048/memorandum/data/seed/SeedData.kt) 只负责写入 6 个默认关系（朋友/同事/家人/同学/客户/其他），不预置人物与词条——首页首次打开即空态。写入发生在 `App.onCreate()` 的 IO 协程里，不阻塞首帧；触发条件是「`SharedPreferences` 未标记」且「关系表为空」，因此用户把这些关系删光后不会再被自动灌回。
 
 ---
 
@@ -400,7 +400,7 @@ adb exec-out run-as com.jfeng2048.memorandum cat databases/memorandum.db > memo.
 
 ```bash
 adb shell am start -n com.jfeng2048.memorandum/.MainActivity   # 冷启动
-adb shell pm clear com.jfeng2048.memorandum                     # 清数据，恢复演示数据
+adb shell pm clear com.jfeng2048.memorandum                     # 清数据，恢复默认关系
 adb shell dumpsys activity activities | grep memorandum        # 查看任务栈
 ```
 

@@ -4,7 +4,7 @@
 
 - 无账号、无网络、无埋点，数据只存在手机本地（Room）。
 - 单 Activity + Jetpack Compose Material3，界面按 `docs/prototype/prototype.html` 还原。
-- 首次启动自动写入 6 个示例人物、24 条示例词条，打开即可看到完整界面。
+- 首次启动自动写入 6 个默认关系，通讯录从空开始，不预置任何人物与词条。
 
 ## 功能一览
 
@@ -52,11 +52,12 @@
 
 产物位置：`app/build/outputs/apk/debug/app-debug.apk`。
 
-## 演示数据
+## 首次启动数据
 
-- 首次启动时 `App` 在 IO 线程调用 `PersonRepository.seedIfNeeded()`，仅在 `SharedPreferences` 未标记且数据库为空时写入。
-- 想重新看到演示数据：清除应用数据（设置 → 应用 → 人物备忘录 → 存储 → 清除数据），或卸载重装。
-- 演示数据在 [SeedData.kt](file:///Users/kika/code/android_project/demo/Memorandum/app/src/main/kotlin/com/jfeng2048/memorandum/data/seed/SeedData.kt)，时间按「距今多少天/小时」生成。
+- 首次启动时 `App` 在 IO 线程调用 `PersonRepository.seedIfNeeded()`，只在 `SharedPreferences` 未标记、且关系表为空时写入 6 个默认关系（朋友 / 同事 / 家人 / 同学 / 客户 / 其他）。
+- 不预置人物与词条，首页首次打开是空态，直接用右下角 FAB 新建即可。
+- 想恢复默认关系：清除应用数据（设置 → 应用 → 人物备忘录 → 存储 → 清除数据），或卸载重装。
+- 关系种子在 [SeedData.kt](file:///Users/kika/code/android_project/demo/Memorandum/app/src/main/kotlin/com/jfeng2048/memorandum/data/seed/SeedData.kt)。
 
 ## 目录结构（精简）
 
@@ -72,7 +73,7 @@ app/src/main/kotlin/com/jfeng2048/memorandum/
 ├── data/
 │   ├── local/                 # Room：实体、DAO、关系、数据库、SharedPreferences 标记
 │   ├── mapper/                # 实体 → 领域模型
-│   ├── seed/                  # 演示数据
+│   ├── seed/                  # 默认关系种子
 │   └── repository/            # PersonRepositoryImpl（唯一数据接缝）
 ├── domain/
 │   ├── model/                 # Person、PersonEntry、Relationship、EntryCategory、Gender、HomeSort
@@ -106,7 +107,7 @@ app/src/main/kotlin/com/jfeng2048/memorandum/
 
 ## 与原型 / PRD 的差异
 
-- **头像**：原型与演示数据都使用「关系色 + 姓名首字」的生成式头像，第一版不接系统相册（PRD 中头像为可选项）。
+- **头像**：原型与界面示例都使用「关系色 + 姓名首字」的生成式头像，第一版不接系统相册（PRD 中头像为可选项）。
 - **词条详情**：按原型实现为浮层卡片，而不是独立路由页面。
 - **删除人物**：入口放详情页顶栏「⋯」菜单，二次确认后级联删除词条并返回列表。
 - **深色主题**：PRD 未要求，第一版固定浅色；`Theme.kt` 已留出接入位置。
