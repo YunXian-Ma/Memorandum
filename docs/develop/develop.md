@@ -296,7 +296,7 @@ core (designsystem / navigation / util)  ← 各层都可依赖
 
 ```bash
 ./gradlew :app:assembleDebug
-# 产物：app/build/outputs/apk/debug/app-debug.apk
+# 产物：app/build/outputs/apk/debug/Memorandum1.1.apk
 ```
 
 Debug 包可直接安装，用于自测与联调。
