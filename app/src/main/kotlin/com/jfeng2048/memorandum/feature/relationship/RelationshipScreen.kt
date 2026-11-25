@@ -1,6 +1,8 @@
 package com.jfeng2048.memorandum.feature.relationship
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,11 +14,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -195,7 +199,16 @@ private fun RelationshipRow(
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            CategoryDot(color = tint.foreground, size = 8.dp)
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(tint.background)
+                    .border(BorderStroke(1.dp, tint.foreground.copy(alpha = 0.2f)), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                CategoryDot(color = tint.foreground, size = 8.dp)
+            }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -218,17 +231,18 @@ private fun RelationshipRow(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .clickable(onClick = onRename)
-                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
             )
             Spacer(Modifier.width(4.dp))
+            val canDelete = item.peopleCount == 0
             Text(
                 text = "删除",
                 fontSize = 12.5.sp,
-                color = DangerRed,
+                color = if (canDelete) DangerRed else ChevronGrey,
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .clickable(onClick = onDelete)
-                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                    .clickable(enabled = canDelete, onClick = onDelete)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
             )
         }
         if (showDivider) {

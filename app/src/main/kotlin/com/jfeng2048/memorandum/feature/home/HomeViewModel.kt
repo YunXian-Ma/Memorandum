@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jfeng2048.memorandum.domain.model.HomeSort
 import com.jfeng2048.memorandum.domain.model.Person
+import com.jfeng2048.memorandum.domain.model.PersonEntry
 import com.jfeng2048.memorandum.domain.model.Relationship
 import com.jfeng2048.memorandum.domain.repository.PersonRepository
 import com.jfeng2048.memorandum.domain.usecase.PersonFilters
@@ -99,6 +100,8 @@ class HomeViewModel @Inject constructor(
             PersonFilters.filter(data.people, filters.query, selectedId),
             filters.sort,
         )
+        val trimmedQuery = filters.query.trim()
+        val counts = data.people.groupingBy { it.relationship.id }.eachCount()
         return HomeUiState(
             isLoading = false,
             query = filters.query,
@@ -113,11 +116,21 @@ class HomeViewModel @Inject constructor(
                     bio = person.bio,
                     entryCount = person.entryCount,
                     updatedAt = person.updatedAt,
+                    matchedEntry = findMatchedEntry(person, trimmedQuery),
                 )
             },
             totalPeople = data.people.size,
             totalEntries = data.people.sumOf { it.entryCount },
+            relationshipCounts = counts,
         )
+    }
+
+    private fun findMatchedEntry(person: Person, query: String): PersonEntry? {
+        if (query.isEmpty()) return null
+        return person.entries.firstOrNull {
+            it.title.contains(query, ignoreCase = true) ||
+                it.content.contains(query, ignoreCase = true)
+        }
     }
 
     private fun pickRandom() {

@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.jfeng2048.memorandum.feature.category.CategoryScreen
 import com.jfeng2048.memorandum.feature.detail.DetailScreen
 import com.jfeng2048.memorandum.feature.entryform.EntryFormScreen
 import com.jfeng2048.memorandum.feature.home.HomeScreen
@@ -39,6 +40,10 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
 
         composable(Routes.RELATIONSHIPS) {
             RelationshipScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.CATEGORIES) {
+            CategoryScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.PERSON_CREATE) {
@@ -92,7 +97,10 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                 navArgument(Routes.ARG_PERSON_ID) { type = NavType.LongType },
             ),
         ) {
-            EntryFormScreen(onBack = { navController.popBackStack() })
+            EntryFormScreen(
+                onBack = { navController.popBackStack() },
+                onManageCategories = { navController.navigate(Routes.CATEGORIES) },
+            )
         }
 
         composable(
@@ -102,7 +110,10 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                 navArgument(Routes.ARG_ENTRY_ID) { type = NavType.LongType },
             ),
         ) {
-            EntryFormScreen(onBack = { navController.popBackStack() })
+            EntryFormScreen(
+                onBack = { navController.popBackStack() },
+                onManageCategories = { navController.navigate(Routes.CATEGORIES) },
+            )
         }
     }
 }

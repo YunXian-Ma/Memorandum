@@ -1,30 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  自适应图标前景：白色备忘卡 + 蓝色人物剪影 + 两条词条线。
-  所有内容都在 108x108 画布的安全区（18..90）内，卡片范围 28..80 x 25..83。
+  趣味自适应图标前景（所有元素均在 108x108 安全区 22..86 内）：
+  两张微微错位叠加的档案卡 + 豆豆眼笑脸头像 + 橙色书签折页 + 彩色词条点。
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 备忘卡 -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M39,25 H69 A11,11 0 0 1 80,36 V72 A11,11 0 0 1 69,83 H39 A11,11 0 0 1 28,72 V36 A11,11 0 0 1 39,25 Z" />
-    <!-- 头部 -->
-    <path
-        android:fillColor="#FF3478F6"
-        android:pathData="M48,41 A6,6 0 1 0 60,41 A6,6 0 1 0 48,41 Z" />
-    <!-- 肩膀 -->
-    <path
-        android:fillColor="#FF3478F6"
-        android:pathData="M43,62 V61 A11,11 0 0 1 65,61 V62 Z" />
-    <!-- 词条线 -->
-    <path
-        android:fillColor="#FFB9CDF6"
-        android:pathData="M39.1,67 H68.9 A1.1,1.1 0 0 1 68.9,69.2 H39.1 A1.1,1.1 0 0 1 39.1,67 Z" />
-    <path
-        android:fillColor="#FFB9CDF6"
-        android:pathData="M39.1,72.4 H58.9 A1.1,1.1 0 0 1 58.9,74.6 H39.1 A1.1,1.1 0 0 1 39.1,72.4 Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="-7">
+        <path
+            android:fillColor="#FF3478F6"
+            android:pathData="M36,26 H72 A9,9 0 0 1 81,35 V73 A9,9 0 0 1 72,82 H36 A9,9 0 0 1 27,73 V35 A9,9 0 0 1 36,26 Z" />
+    </group>
+
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="3">
+        <path
+            android:fillColor="#FF1D1D1F"
+            android:fillAlpha="0.08"
+            android:pathData="M38,29 H74 A9,9 0 0 1 83,38 V75 A9,9 0 0 1 74,84 H38 A9,9 0 0 1 29,75 V38 A9,9 0 0 1 38,29 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:strokeColor="#FF3478F6"
+            android:strokeWidth="2.2"
+            android:pathData="M37,27 H73 A9,9 0 0 1 82,36 V73 A9,9 0 0 1 73,82 H37 A9,9 0 0 1 28,73 V36 A9,9 0 0 1 37,27 Z" />
+
+        <path
+            android:fillColor="#FFE0703A"
+            android:pathData="M65,24 H73 A2,2 0 0 1 75,26 V36 L70,33 L65,36 Z" />
+
+        <path
+            android:fillColor="#FFE3ECFF"
+            android:pathData="M42,46 A12,12 0 1,0 66,46 A12,12 0 1,0 42,46 Z" />
+        <path
+            android:fillColor="#FF2C56B8"
+            android:pathData="M48.5,44 A1.7,1.7 0 1,0 51.9,44 A1.7,1.7 0 1,0 48.5,44 Z" />
+        <path
+            android:fillColor="#FF2C56B8"
+            android:pathData="M56.1,44 A1.7,1.7 0 1,0 59.5,44 A1.7,1.7 0 1,0 56.1,44 Z" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FF2C56B8"
+            android:strokeWidth="1.9"
+            android:strokeLineCap="round"
+            android:pathData="M50.5,49.2 Q54,52.6 57.5,49.2" />
+
+        <path
+            android:fillColor="#FFE0703A"
+            android:pathData="M37,65.5 A2.2,2.2 0 1,0 41.4,65.5 A2.2,2.2 0 1,0 37,65.5 Z" />
+        <path
+            android:fillColor="#FFB9CDF6"
+            android:pathData="M45.5,64.2 H70.5 A1.3,1.3 0 0 1 70.5,66.8 H45.5 A1.3,1.3 0 0 1 45.5,64.2 Z" />
+
+        <path
+            android:fillColor="#FF3C8C63"
+            android:pathData="M37,72.5 A2.2,2.2 0 1,0 41.4,72.5 A2.2,2.2 0 1,0 37,72.5 Z" />
+        <path
+            android:fillColor="#FFD7DCE6"
+            android:pathData="M45.5,71.2 H63.5 A1.3,1.3 0 0 1 63.5,73.8 H45.5 A1.3,1.3 0 0 1 45.5,71.2 Z" />
+    </group>
 </vector>

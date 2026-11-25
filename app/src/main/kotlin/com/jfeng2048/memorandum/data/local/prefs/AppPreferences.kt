@@ -26,6 +26,6 @@ class AppPreferences @Inject constructor(
          * 带版本号：数据库结构升级（fallbackToDestructiveMigration 会清库）后，
          * 更换 key 等同于把标记重置为 false，保证默认关系与演示数据重新写入。
          */
-        const val KEY_SEEDED = "seed_done_v2"
+        const val KEY_SEEDED = "seed_done_v3"
     }
 }

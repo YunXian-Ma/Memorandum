@@ -1,7 +1,8 @@
 package com.jfeng2048.memorandum.data.mapper
 
-import com.jfeng2048.memorandum.data.local.entity.EntryEntity
+import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
 import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
+import com.jfeng2048.memorandum.data.local.relation.EntryWithCategory
 import com.jfeng2048.memorandum.data.local.relation.PersonWithEntries
 import com.jfeng2048.memorandum.domain.model.EntryCategory
 import com.jfeng2048.memorandum.domain.model.Gender
@@ -20,7 +21,7 @@ fun PersonWithEntries.toDomain(): Person = Person(
     createdAt = person.createdAt,
     updatedAt = person.updatedAt,
     entries = entries
-        .sortedByDescending { it.updatedAt }
+        .sortedByDescending { it.entry.updatedAt }
         .map { it.toDomain() },
 )
 
@@ -30,12 +31,18 @@ fun RelationshipEntity.toDomain(): Relationship = Relationship(
     colorIndex = colorIndex,
 )
 
-fun EntryEntity.toDomain(): PersonEntry = PersonEntry(
+fun CategoryEntity.toDomain(): EntryCategory = EntryCategory(
     id = id,
-    personId = personId,
-    title = title,
-    category = EntryCategory.fromLabel(category),
-    content = content.orEmpty(),
-    createdAt = createdAt,
-    updatedAt = updatedAt,
+    name = name,
+    colorIndex = colorIndex,
+)
+
+fun EntryWithCategory.toDomain(): PersonEntry = PersonEntry(
+    id = entry.id,
+    personId = entry.personId,
+    title = entry.title,
+    category = category?.toDomain() ?: EntryCategory.Unknown,
+    content = entry.content.orEmpty(),
+    createdAt = entry.createdAt,
+    updatedAt = entry.updatedAt,
 )

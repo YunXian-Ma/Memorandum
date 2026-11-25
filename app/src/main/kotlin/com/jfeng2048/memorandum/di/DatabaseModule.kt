@@ -3,6 +3,7 @@ package com.jfeng2048.memorandum.di
 import android.content.Context
 import androidx.room.Room
 import com.jfeng2048.memorandum.data.local.AppDatabase
+import com.jfeng2048.memorandum.data.local.dao.CategoryDao
 import com.jfeng2048.memorandum.data.local.dao.EntryDao
 import com.jfeng2048.memorandum.data.local.dao.PersonDao
 import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
@@ -30,6 +31,9 @@ object DatabaseModule {
 
     @Provides
     fun provideRelationshipDao(database: AppDatabase): RelationshipDao = database.relationshipDao()
+
+    @Provides
+    fun provideCategoryDao(database: AppDatabase): CategoryDao = database.categoryDao()
 
     @Provides
     fun provideEntryDao(database: AppDatabase): EntryDao = database.entryDao()

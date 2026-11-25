@@ -37,14 +37,21 @@ fun relationshipTint(relationship: Relationship): Tint = relationshipTint(relati
  * 词条分类色：9 个分类，只以点状出现。
  * 取值与原型 CAT_STYLE 一致。
  */
-fun categoryColor(category: EntryCategory): Color = when (category) {
-    EntryCategory.CAREER -> Color(0xFF2C56B8)
-    EntryCategory.HOBBY -> Color(0xFFE0703A)
-    EntryCategory.PERSONALITY -> Color(0xFF8B5BB8)
-    EntryCategory.LIFESTYLE -> Color(0xFF3C8C63)
-    EntryCategory.DIET -> Color(0xFFC9932B)
-    EntryCategory.EDUCATION -> Color(0xFF3A7CA8)
-    EntryCategory.WORK -> Color(0xFF5C6AC4)
-    EntryCategory.DATE -> Color(0xFFC4433C)
-    EntryCategory.OTHER -> Color(0xFF8A8F9B)
+private val categoryPalette = listOf(
+    Color(0xFFE0703A),
+    Color(0xFF8B5BB8),
+    Color(0xFF3C8C63),
+    Color(0xFFC4433C),
+    Color(0xFF2C56B8),
+    Color(0xFFC9932B),
+    Color(0xFF3A7CA8),
+    Color(0xFF5C6AC4),
+    Color(0xFF8A8F9B),
+)
+
+fun categoryColor(colorIndex: Int): Color {
+    val index = Math.floorMod(colorIndex, categoryPalette.size)
+    return categoryPalette[index]
 }
+
+fun categoryColor(category: EntryCategory): Color = categoryColor(category.colorIndex)

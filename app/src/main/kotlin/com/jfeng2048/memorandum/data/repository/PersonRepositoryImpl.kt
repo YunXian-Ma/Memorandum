@@ -1,8 +1,10 @@
 package com.jfeng2048.memorandum.data.repository
 
+import com.jfeng2048.memorandum.data.local.dao.CategoryDao
 import com.jfeng2048.memorandum.data.local.dao.EntryDao
 import com.jfeng2048.memorandum.data.local.dao.PersonDao
 import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
+import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
 import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.map
 class PersonRepositoryImpl @Inject constructor(
     private val personDao: PersonDao,
     private val relationshipDao: RelationshipDao,
+    private val categoryDao: CategoryDao,
     private val entryDao: EntryDao,
     private val preferences: AppPreferences,
 ) : PersonRepository {
@@ -64,8 +67,40 @@ class PersonRepositoryImpl @Inject constructor(
         return true
     }
 
+    override fun observeCategories(): Flow<List<EntryCategory>> =
+        categoryDao.observeAll().map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeCategoryUsageCounts(): Flow<Map<Long, Int>> =
+        entryDao.observeCategoryUsageCounts().map { rows ->
+            rows.associate { it.categoryId to it.count }
+        }
+
+    override suspend fun createCategory(name: String): Long {
+        val count = categoryDao.count()
+        return categoryDao.insert(
+            CategoryEntity(
+                name = name,
+                colorIndex = count % EntryCategory.COLOR_COUNT,
+                sortOrder = count,
+                createdAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
+    override suspend fun renameCategory(categoryId: Long, name: String) {
+        val existing = categoryDao.findById(categoryId) ?: return
+        categoryDao.update(existing.copy(name = name))
+    }
+
+    override suspend fun deleteCategory(categoryId: Long): Boolean {
+        if (categoryDao.count() <= 1) return false
+        if (entryDao.countByCategory(categoryId) > 0) return false
+        categoryDao.deleteById(categoryId)
+        return true
+    }
+
     override suspend fun getEntry(entryId: Long): PersonEntry? =
-        entryDao.findById(entryId)?.toDomain()
+        entryDao.findWithCategoryById(entryId)?.toDomain()
 
     override suspend fun createPerson(
         name: String,
@@ -113,7 +148,7 @@ class PersonRepositoryImpl @Inject constructor(
     override suspend fun createEntry(
         personId: Long,
         title: String,
-        category: EntryCategory,
+        categoryId: Long,
         content: String,
     ): Long {
         val now = System.currentTimeMillis()
@@ -121,7 +156,7 @@ class PersonRepositoryImpl @Inject constructor(
             EntryEntity(
                 personId = personId,
                 title = title,
-                category = category.label,
+                categoryId = categoryId,
                 content = content.takeIf { it.isNotBlank() },
                 createdAt = now,
                 updatedAt = now,
@@ -134,7 +169,7 @@ class PersonRepositoryImpl @Inject constructor(
     override suspend fun updateEntry(
         entryId: Long,
         title: String,
-        category: EntryCategory,
+        categoryId: Long,
         content: String,
     ) {
         val existing = entryDao.findById(entryId) ?: return
@@ -142,7 +177,7 @@ class PersonRepositoryImpl @Inject constructor(
         entryDao.update(
             existing.copy(
                 title = title,
-                category = category.label,
+                categoryId = categoryId,
                 content = content.takeIf { it.isNotBlank() },
                 updatedAt = now,
             ),
@@ -157,11 +192,16 @@ class PersonRepositoryImpl @Inject constructor(
     }
 
     override suspend fun seedIfNeeded() {
-        if (preferences.isSeeded) return
-        // 只补默认关系，不预置人物与词条；关系表为空时写入，避免用户删光后又被灌回
-        if (relationshipDao.count() == 0) {
-            SeedData.insertDefaultRelationships(relationshipDao, System.currentTimeMillis())
+        val now = System.currentTimeMillis()
+        // 默认分类在老库升级（version 2 -> 3 重建表）后也要能补齐
+        if (categoryDao.count() == 0) {
+            SeedData.insertDefaultCategories(categoryDao, now)
         }
+        // 业务上至少保留一个关系，若为空说明发生了破坏性建库/清表，需重新补齐默认关系
+        if (relationshipDao.count() == 0) {
+            SeedData.insertDefaultRelationships(relationshipDao, now)
+        }
+        if (preferences.isSeeded) return
         preferences.isSeeded = true
     }
 }

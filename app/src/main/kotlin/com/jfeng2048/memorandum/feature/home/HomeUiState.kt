@@ -1,6 +1,7 @@
 package com.jfeng2048.memorandum.feature.home
 
 import com.jfeng2048.memorandum.domain.model.HomeSort
+import com.jfeng2048.memorandum.domain.model.PersonEntry
 import com.jfeng2048.memorandum.domain.model.Relationship
 
 /** 首页 UI 状态：页面只读它，不自己拼业务 */
@@ -15,6 +16,7 @@ data class HomeUiState(
     val people: List<PersonCardUi> = emptyList(),
     val totalPeople: Int = 0,
     val totalEntries: Int = 0,
+    val relationshipCounts: Map<Long, Int> = emptyMap(),
     val errorMessage: String? = null,
 )
 
@@ -26,6 +28,7 @@ data class PersonCardUi(
     val bio: String,
     val entryCount: Int,
     val updatedAt: Long,
+    val matchedEntry: PersonEntry? = null,
 )
 
 sealed interface HomeEvent {

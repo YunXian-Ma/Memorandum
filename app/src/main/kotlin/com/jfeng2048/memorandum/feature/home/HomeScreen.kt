@@ -1,5 +1,7 @@
 package com.jfeng2048.memorandum.feature.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -14,7 +16,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -26,6 +27,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -54,6 +57,7 @@ import com.jfeng2048.memorandum.core.designsystem.theme.Canvas
 import com.jfeng2048.memorandum.core.designsystem.theme.Hairline
 import com.jfeng2048.memorandum.core.designsystem.theme.Ink
 import com.jfeng2048.memorandum.core.designsystem.theme.Muted
+import com.jfeng2048.memorandum.core.designsystem.theme.TouchTarget
 import com.jfeng2048.memorandum.core.designsystem.theme.TextSecondary
 import com.jfeng2048.memorandum.core.designsystem.theme.TextTertiary
 import com.jfeng2048.memorandum.core.designsystem.theme.TrackGrey
@@ -145,7 +149,10 @@ private fun HomeContent(
                         color = Muted,
                     )
                     Spacer(Modifier.weight(1f))
-                    RandomButton(onClick = onRandom)
+                    RandomButton(
+                        enabled = state.totalPeople > 0,
+                        onClick = onRandom,
+                    )
                     Spacer(Modifier.width(8.dp))
                     ManageRelationshipsButton(onClick = onManageRelationships)
                 }
@@ -156,6 +163,8 @@ private fun HomeContent(
                 Spacer(Modifier.height(14.dp))
                 FilterTabs(
                     relationships = state.relationships,
+                    totalPeople = state.totalPeople,
+                    relationshipCounts = state.relationshipCounts,
                     selectedId = state.selectedRelationshipId,
                     onSelect = onFilterChange,
                 )
@@ -183,19 +192,18 @@ private fun HomeContent(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 22.dp)
-                .size(56.dp)
+                .size(TouchTarget.fab)
                 .shadow(14.dp, CircleShape)
                 .clip(CircleShape)
                 .background(BrandBlue)
                 .clickable(onClick = onCreatePerson),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "＋",
-                color = Color.White,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Light,
-                modifier = Modifier.offset(y = (-1).dp),
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = "新建人物",
+                tint = Color.White,
+                modifier = Modifier.size(26.dp),
             )
         }
     }
@@ -235,12 +243,16 @@ private fun PeopleList(
 }
 
 @Composable
-private fun RandomButton(onClick: () -> Unit) {
+private fun RandomButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .clip(CircleShape)
             .background(TrackGrey)
-            .clickable(onClick = onClick)
+            .alpha(if (enabled) 1f else 0.45f)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(start = 8.dp, end = 10.dp, top = 5.dp, bottom = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -272,6 +284,8 @@ private fun ManageRelationshipsButton(onClick: () -> Unit) {
 @Composable
 private fun FilterTabs(
     relationships: List<Relationship>,
+    totalPeople: Int,
+    relationshipCounts: Map<Long, Int>,
     selectedId: Long?,
     onSelect: (Long?) -> Unit,
 ) {
@@ -283,6 +297,7 @@ private fun FilterTabs(
     ) {
         FilterTab(
             label = "全部",
+            count = totalPeople,
             dotColor = null,
             selected = selectedId == null,
             onClick = { onSelect(null) },
@@ -290,6 +305,7 @@ private fun FilterTabs(
         relationships.forEach { relationship ->
             FilterTab(
                 label = relationship.name,
+                count = relationshipCounts[relationship.id] ?: 0,
                 dotColor = relationshipTint(relationship).foreground,
                 selected = selectedId == relationship.id,
                 onClick = { onSelect(relationship.id) },
@@ -301,11 +317,22 @@ private fun FilterTabs(
 @Composable
 private fun FilterTab(
     label: String,
+    count: Int,
     dotColor: Color?,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
     val accent = dotColor ?: BrandBlue
+    val textColor by animateColorAsState(
+        targetValue = if (selected) accent else TextSecondary,
+        animationSpec = tween(160),
+        label = "filterTabTextColor",
+    )
+    val indicatorColor by animateColorAsState(
+        targetValue = if (selected) accent else Color.Transparent,
+        animationSpec = tween(180),
+        label = "filterTabIndicatorColor",
+    )
     Column(
         modifier = Modifier
             .width(IntrinsicSize.Max)
@@ -322,10 +349,10 @@ private fun FilterTab(
                 Spacer(Modifier.width(5.dp))
             }
             Text(
-                text = label,
+                text = if (count > 0) "$label $count" else label,
                 fontSize = 13.5.sp,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                color = if (selected) accent else TextSecondary,
+                color = textColor,
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -333,7 +360,7 @@ private fun FilterTab(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(2.dp)
-                .background(if (selected) accent else Color.Transparent),
+                .background(indicatorColor),
         )
     }
 }

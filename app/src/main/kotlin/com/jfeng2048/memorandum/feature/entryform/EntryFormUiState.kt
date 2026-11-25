@@ -7,17 +7,21 @@ data class EntryFormUiState(
     val isEditing: Boolean = false,
     val personName: String = "",
     val title: String = "",
-    val category: EntryCategory = EntryCategory.HOBBY,
+    val categories: List<EntryCategory> = emptyList(),
+    val categoryId: Long? = null,
     val content: String = "",
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
 ) {
-    val canSave: Boolean get() = title.isNotBlank() && !isSaving
+    val selectedCategory: EntryCategory?
+        get() = categories.firstOrNull { it.id == categoryId }
+
+    val canSave: Boolean get() = title.isNotBlank() && categoryId != null && !isSaving
 }
 
 sealed interface EntryFormEvent {
     data class TitleChanged(val value: String) : EntryFormEvent
-    data class CategoryChanged(val category: EntryCategory) : EntryFormEvent
+    data class CategoryChanged(val categoryId: Long) : EntryFormEvent
     data class ContentChanged(val value: String) : EntryFormEvent
     data object Save : EntryFormEvent
 }

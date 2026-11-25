@@ -30,3 +30,10 @@ val AppShapes = Shapes(
     large = RoundedCornerShape(16.dp),
     extraLarge = RoundedCornerShape(24.dp),
 )
+
+/** 保证最小 48dp 可点击热区 */
+object TouchTarget {
+    val min = 48.dp
+    val fab = 56.dp
+    val topBarHeight = 52.dp
+}

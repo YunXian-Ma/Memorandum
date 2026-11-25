@@ -1,7 +1,10 @@
 package com.jfeng2048.memorandum.data.seed
 
+import com.jfeng2048.memorandum.data.local.dao.CategoryDao
 import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
+import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
 import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
+import com.jfeng2048.memorandum.domain.model.EntryCategory
 import com.jfeng2048.memorandum.domain.model.Relationship
 
 /**
@@ -14,6 +17,19 @@ internal object SeedData {
         Relationship.DEFAULT_NAMES.forEachIndexed { index, name ->
             relationshipDao.insert(
                 RelationshipEntity(
+                    name = name,
+                    colorIndex = index,
+                    sortOrder = index,
+                    createdAt = now,
+                ),
+            )
+        }
+    }
+
+    suspend fun insertDefaultCategories(categoryDao: CategoryDao, now: Long) {
+        EntryCategory.DEFAULT_NAMES.forEachIndexed { index, name ->
+            categoryDao.insert(
+                CategoryEntity(
                     name = name,
                     colorIndex = index,
                     sortOrder = index,

@@ -15,11 +15,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -129,12 +132,19 @@ fun EntryCardOverlay(
 
                 if (current.content.isNotBlank()) {
                     Spacer(Modifier.height(9.dp))
-                    Text(
-                        text = current.content,
-                        fontSize = 14.5.sp,
-                        lineHeight = 26.sp,
-                        color = TextCardBody,
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 260.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        Text(
+                            text = current.content,
+                            fontSize = 14.5.sp,
+                            lineHeight = 26.sp,
+                            color = TextCardBody,
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -180,6 +190,6 @@ private fun CardAction(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 2.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 10.dp),
     )
 }

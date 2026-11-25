@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -38,6 +39,7 @@ class EntryFormViewModel @Inject constructor(
 
     init {
         load()
+        observeCategories()
     }
 
     fun onEvent(event: EntryFormEvent) {
@@ -47,7 +49,7 @@ class EntryFormViewModel @Inject constructor(
             }
 
             is EntryFormEvent.CategoryChanged -> _uiState.update {
-                it.copy(category = event.category)
+                it.copy(categoryId = event.categoryId)
             }
 
             is EntryFormEvent.ContentChanged -> _uiState.update {
@@ -58,19 +60,34 @@ class EntryFormViewModel @Inject constructor(
         }
     }
 
+    private fun observeCategories() {
+        viewModelScope.launch {
+            repository.observeCategories().collect { categories ->
+                _uiState.update { state ->
+                    val validSelected = state.categoryId?.takeIf { id ->
+                        categories.any { it.id == id }
+                    } ?: defaultCategoryId(categories)
+                    state.copy(categories = categories, categoryId = validSelected)
+                }
+            }
+        }
+    }
+
     private fun load() {
         viewModelScope.launch {
             runCatching {
                 val person = repository.observePerson(personId).first()
                 val entry = entryId?.let { repository.getEntry(it) }
-                person to entry
-            }.onSuccess { (person, entry) ->
+                val categories = repository.observeCategories().first()
+                Triple(person, entry, categories)
+            }.onSuccess { (person, entry, categories) ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         personName = person?.name.orEmpty(),
                         title = entry?.title.orEmpty(),
-                        category = entry?.category ?: EntryCategory.HOBBY,
+                        categories = categories,
+                        categoryId = entry?.category?.id ?: defaultCategoryId(categories),
                         content = entry?.content.orEmpty(),
                         errorMessage = if (person == null) "没有找到这个人物" else null,
                     )
@@ -86,8 +103,12 @@ class EntryFormViewModel @Inject constructor(
         }
     }
 
+    private fun defaultCategoryId(categories: List<EntryCategory>): Long? =
+        categories.firstOrNull { it.name == "兴趣爱好" }?.id ?: categories.firstOrNull()?.id
+
     private fun save() {
         val state = _uiState.value
+        val categoryId = state.categoryId ?: return
         if (!state.canSave) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
@@ -96,14 +117,14 @@ class EntryFormViewModel @Inject constructor(
                     repository.createEntry(
                         personId = personId,
                         title = state.title.trim(),
-                        category = state.category,
+                        categoryId = categoryId,
                         content = state.content.trim(),
                     )
                 } else {
                     repository.updateEntry(
                         entryId = entryId,
                         title = state.title.trim(),
-                        category = state.category,
+                        categoryId = categoryId,
                         content = state.content.trim(),
                     )
                 }

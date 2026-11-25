@@ -17,6 +17,7 @@ class PersonFiltersTest {
     private val friend = Relationship(id = 1L, name = "朋友", colorIndex = 0)
     private val colleague = Relationship(id = 2L, name = "同事", colorIndex = 1)
     private val classmate = Relationship(id = 4L, name = "同学", colorIndex = 3)
+    private val hobby = EntryCategory(id = 2L, name = "兴趣爱好", colorIndex = 1)
 
     private fun person(
         id: Long,
@@ -41,7 +42,7 @@ class PersonFiltersTest {
         personId: Long,
         title: String,
         content: String,
-        category: EntryCategory = EntryCategory.HOBBY,
+        category: EntryCategory = hobby,
     ) = PersonEntry(
         id = title.hashCode().toLong(),
         personId = personId,

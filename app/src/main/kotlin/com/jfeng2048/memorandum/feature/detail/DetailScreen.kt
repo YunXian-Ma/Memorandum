@@ -1,7 +1,9 @@
 package com.jfeng2048.memorandum.feature.detail
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +26,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -63,13 +66,14 @@ import com.jfeng2048.memorandum.core.designsystem.theme.Ink
 import com.jfeng2048.memorandum.core.designsystem.theme.Muted
 import com.jfeng2048.memorandum.core.designsystem.theme.NumericTextStyle
 import com.jfeng2048.memorandum.core.designsystem.theme.PersonNameTextStyle
+import com.jfeng2048.memorandum.core.designsystem.theme.SurfaceMuted
 import com.jfeng2048.memorandum.core.designsystem.theme.SurfaceStrong
 import com.jfeng2048.memorandum.core.designsystem.theme.TextBody
 import com.jfeng2048.memorandum.core.designsystem.theme.TextSecondary
+import com.jfeng2048.memorandum.core.designsystem.theme.TouchTarget
 import com.jfeng2048.memorandum.core.designsystem.theme.categoryColor
 import com.jfeng2048.memorandum.core.designsystem.theme.relationshipTint
 import com.jfeng2048.memorandum.core.util.DateFormats
-import com.jfeng2048.memorandum.domain.model.EntryCategory
 import com.jfeng2048.memorandum.domain.model.Person
 import com.jfeng2048.memorandum.feature.detail.components.EntryCardOverlay
 import com.jfeng2048.memorandum.feature.detail.components.EntryRow
@@ -192,7 +196,7 @@ private fun DetailContent(
     onEditPerson: () -> Unit,
     onRequestDeletePerson: () -> Unit,
     onAddEntry: () -> Unit,
-    onSelectCategory: (EntryCategory?) -> Unit,
+    onSelectCategory: (Long?) -> Unit,
     onSelectEntry: (Long) -> Unit,
 ) {
     val tint = relationshipTint(person.relationship)
@@ -208,7 +212,7 @@ private fun DetailContent(
                 Box {
                     IconButton(
                         onClick = { onMenuOpenChange(true) },
-                        modifier = Modifier.size(36.dp),
+                        modifier = Modifier.size(TouchTarget.min),
                     ) {
                         Icon(
                             imageVector = Icons.Filled.MoreVert,
@@ -331,15 +335,15 @@ private fun DetailContent(
                     CategoryFilterLabel(
                         label = "全部",
                         color = null,
-                        selected = state.selectedCategory == null,
+                        selected = state.selectedCategoryId == null,
                         onClick = { onSelectCategory(null) },
                     )
                     state.categories.forEach { category ->
                         CategoryFilterLabel(
                             label = category.label,
                             color = categoryColor(category),
-                            selected = state.selectedCategory == category,
-                            onClick = { onSelectCategory(category) },
+                            selected = state.selectedCategoryId == category.id,
+                            onClick = { onSelectCategory(category.id) },
                         )
                     }
                 }
@@ -355,7 +359,7 @@ private fun DetailContent(
         if (entries.isEmpty()) {
             item {
                 Text(
-                    text = if (state.selectedCategory == null) {
+                    text = if (state.selectedCategoryId == null) {
                         "还没有词条，先记一条吧。"
                     } else {
                         "这个分类下还没有词条。"
@@ -379,19 +383,32 @@ private fun DetailContent(
         }
 
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onAddEntry)
-                    .padding(vertical = 18.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "＋ 添加词条",
-                    color = BrandBlue,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                )
+            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceMuted)
+                        .border(BorderStroke(1.dp, Hairline), RoundedCornerShape(12.dp))
+                        .clickable(onClick = onAddEntry)
+                        .padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        tint = BrandBlue,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "添加词条",
+                        color = BrandBlue,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         }
     }

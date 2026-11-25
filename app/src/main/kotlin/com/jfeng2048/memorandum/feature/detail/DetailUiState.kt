@@ -8,24 +8,23 @@ import com.jfeng2048.memorandum.domain.model.PersonEntry
 data class DetailUiState(
     val isLoading: Boolean = true,
     val person: Person? = null,
-    val selectedCategory: EntryCategory? = null,
+    val selectedCategoryId: Long? = null,
     val selectedEntryId: Long? = null,
     val notFound: Boolean = false,
     val errorMessage: String? = null,
 ) {
-    /** 该人物实际出现过的分类，按分类枚举顺序排列 */
+    /** 该人物实际出现过的分类 */
     val categories: List<EntryCategory>
         get() = person?.entries
             ?.map { it.category }
-            ?.distinct()
-            ?.sortedBy { it.ordinal }
+            ?.distinctBy { it.id }
             .orEmpty()
 
     val visibleEntries: List<PersonEntry>
         get() {
             val all = person?.entries.orEmpty()
-            val category = selectedCategory
-            return if (category == null) all else all.filter { it.category == category }
+            val categoryId = selectedCategoryId
+            return if (categoryId == null) all else all.filter { it.category.id == categoryId }
         }
 
     val selectedEntry: PersonEntry?
@@ -35,7 +34,7 @@ data class DetailUiState(
 }
 
 sealed interface DetailEvent {
-    data class SelectCategory(val category: EntryCategory?) : DetailEvent
+    data class SelectCategory(val categoryId: Long?) : DetailEvent
     data class SelectEntry(val entryId: Long?) : DetailEvent
     data class DeleteEntry(val entryId: Long) : DetailEvent
     data object DeletePerson : DetailEvent

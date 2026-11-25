@@ -47,7 +47,7 @@ class DetailViewModel @Inject constructor(
     fun onEvent(event: DetailEvent) {
         when (event) {
             is DetailEvent.SelectCategory -> _uiState.update {
-                it.copy(selectedCategory = event.category)
+                it.copy(selectedCategoryId = event.categoryId)
             }
 
             is DetailEvent.SelectEntry -> _uiState.update {
@@ -83,8 +83,8 @@ class DetailViewModel @Inject constructor(
             }
             .onEach { person ->
                 _uiState.update { state ->
-                    val category = state.selectedCategory?.takeIf { selected ->
-                        person?.entries?.any { it.category == selected } == true
+                    val categoryId = state.selectedCategoryId?.takeIf { selected ->
+                        person?.entries?.any { it.category.id == selected } == true
                     }
                     val entryId = state.selectedEntryId?.takeIf { selected ->
                         person?.entries?.any { it.id == selected } == true
@@ -93,7 +93,7 @@ class DetailViewModel @Inject constructor(
                         isLoading = false,
                         person = person,
                         notFound = person == null,
-                        selectedCategory = category,
+                        selectedCategoryId = categoryId,
                         selectedEntryId = entryId,
                         errorMessage = null,
                     )

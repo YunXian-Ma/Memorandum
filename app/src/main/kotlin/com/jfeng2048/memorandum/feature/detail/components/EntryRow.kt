@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jfeng2048.memorandum.core.designsystem.component.CategoryDot
@@ -22,6 +23,7 @@ import com.jfeng2048.memorandum.core.designsystem.theme.ChevronGrey
 import com.jfeng2048.memorandum.core.designsystem.theme.Hairline
 import com.jfeng2048.memorandum.core.designsystem.theme.Ink
 import com.jfeng2048.memorandum.core.designsystem.theme.Muted
+import com.jfeng2048.memorandum.core.designsystem.theme.TextSecondary
 import com.jfeng2048.memorandum.core.designsystem.theme.categoryColor
 import com.jfeng2048.memorandum.core.util.DateFormats
 import com.jfeng2048.memorandum.domain.model.PersonEntry
@@ -60,6 +62,17 @@ fun EntryRow(
                     fontWeight = FontWeight.Medium,
                     color = Ink,
                 )
+                if (entry.content.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = entry.content,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp,
+                        color = TextSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "${entry.category.label} · ${DateFormats.formatUpdated(entry.updatedAt)}",

@@ -16,7 +16,7 @@ data class Person(
     val entries: List<PersonEntry>,
 ) {
     val entryCount: Int get() = entries.size
-    val categoryCount: Int get() = entries.map { it.category }.distinct().size
+    val categoryCount: Int get() = entries.map { it.category.id }.distinct().size
 }
 
 /** 描述词条：一个人物下的最小记录单位 */

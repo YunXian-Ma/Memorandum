@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -127,6 +129,7 @@ fun PersonFormScreen(
                         value = state.name,
                         onValueChange = { viewModel.onEvent(PersonFormEvent.NameChanged(it)) },
                         placeholder = "写你平时怎么叫他",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     )
 
                     Spacer(Modifier.height(22.dp))
@@ -166,6 +169,13 @@ fun PersonFormScreen(
                         placeholder = "一句话记住他。例如：大学室友，做建筑设计，周三打球。",
                         singleLine = false,
                         minLines = 4,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "${state.bio.length} 字",
+                        fontSize = 11.sp,
+                        color = Muted,
+                        modifier = Modifier.align(Alignment.End),
                     )
 
                     state.errorMessage?.let { message ->
