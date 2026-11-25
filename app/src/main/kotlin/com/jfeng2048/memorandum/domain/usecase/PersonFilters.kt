@@ -20,7 +20,8 @@ object PersonFilters {
             person.entries.any {
                 it.title.contains(query, ignoreCase = true) ||
                     it.content.contains(query, ignoreCase = true)
-            }
+            } ||
+            person.conversations.any { it.content.contains(query, ignoreCase = true) }
     }
 
     fun filter(

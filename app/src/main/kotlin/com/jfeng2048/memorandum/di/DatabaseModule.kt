@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.jfeng2048.memorandum.data.local.AppDatabase
 import com.jfeng2048.memorandum.data.local.dao.CategoryDao
+import com.jfeng2048.memorandum.data.local.dao.ConversationDao
 import com.jfeng2048.memorandum.data.local.dao.EntryDao
 import com.jfeng2048.memorandum.data.local.dao.PersonDao
 import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
@@ -37,4 +38,7 @@ object DatabaseModule {
 
     @Provides
     fun provideEntryDao(database: AppDatabase): EntryDao = database.entryDao()
+
+    @Provides
+    fun provideConversationDao(database: AppDatabase): ConversationDao = database.conversationDao()
 }

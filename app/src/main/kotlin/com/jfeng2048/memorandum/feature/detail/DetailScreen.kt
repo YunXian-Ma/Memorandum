@@ -24,7 +24,11 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import com.jfeng2048.memorandum.domain.model.PersonConversation
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -75,6 +79,7 @@ import com.jfeng2048.memorandum.core.designsystem.theme.PersonNameTextStyle
 import com.jfeng2048.memorandum.core.designsystem.theme.SurfaceMuted
 import com.jfeng2048.memorandum.core.designsystem.theme.SurfaceStrong
 import com.jfeng2048.memorandum.core.designsystem.theme.TextBody
+import com.jfeng2048.memorandum.core.designsystem.theme.TrackGrey
 import com.jfeng2048.memorandum.core.designsystem.theme.TextSecondary
 import com.jfeng2048.memorandum.core.designsystem.theme.TouchTarget
 import com.jfeng2048.memorandum.core.designsystem.theme.categoryColor
@@ -97,6 +102,7 @@ fun DetailScreen(
     var toast by remember { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var deleteEntryId by remember { mutableStateOf<Long?>(null) }
+    var deleteConversationId by remember { mutableStateOf<Long?>(null) }
     var confirmDeletePerson by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
@@ -147,6 +153,8 @@ fun DetailScreen(
                 onAddEntry = { viewModel.onEvent(DetailEvent.AddEntry) },
                 onSelectCategory = { viewModel.onEvent(DetailEvent.SelectCategory(it)) },
                 onSelectEntry = { viewModel.onEvent(DetailEvent.SelectEntry(it)) },
+                onSwitchTab = { viewModel.onEvent(DetailEvent.SwitchTab(it)) },
+                onLongPressConversation = { deleteConversationId = it },
             )
         }
 
@@ -191,6 +199,18 @@ fun DetailScreen(
         )
     }
 
+    deleteConversationId?.let { id ->
+        ConfirmDialog(
+            title = "删除这段对话？",
+            message = "删除后无法恢复，但不会影响人物档案。",
+            onConfirm = {
+                deleteConversationId = null
+                viewModel.onEvent(DetailEvent.DeleteConversation(id))
+            },
+            onDismiss = { deleteConversationId = null },
+        )
+    }
+
     deleteEntryId?.let { entryId ->
         ConfirmDialog(
             title = "删除这条词条？",
@@ -218,6 +238,8 @@ private fun DetailContent(
     onAddEntry: () -> Unit,
     onSelectCategory: (Long?) -> Unit,
     onSelectEntry: (Long) -> Unit,
+    onSwitchTab: (DetailTab) -> Unit,
+    onLongPressConversation: (Long) -> Unit,
 ) {
     val primaryRelationship = person.primaryRelationship
     val tint = relationshipTint(primaryRelationship)
@@ -366,6 +388,34 @@ private fun DetailContent(
         }
 
         item {
+            TabSwitcher(
+                tab = state.tab,
+                entryCount = person.entryCount,
+                conversationCount = person.conversationCount,
+                onSwitch = onSwitchTab,
+            )
+        }
+
+        if (state.tab == DetailTab.CONVERSATIONS) {
+            if (person.conversations.isEmpty()) {
+                item {
+                    Text(
+                        text = "还没有收集过对话。开启悬浮助手，在聊天软件里一键收进来。",
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 28.dp),
+                        fontSize = 13.sp,
+                        color = Muted,
+                    )
+                }
+            } else {
+                items(items = person.conversations, key = { it.id }) { conversation ->
+                    ConversationCard(
+                        conversation = conversation,
+                        onLongPress = { onLongPressConversation(conversation.id) },
+                    )
+                }
+            }
+        } else {
+        item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -464,6 +514,7 @@ private fun DetailContent(
                     )
                 }
             }
+        }
         }
     }
 }
@@ -585,4 +636,84 @@ private fun EditRelationshipsDialog(
         containerColor = Canvas,
         shape = RoundedCornerShape(14.dp),
     )
+}
+
+@Composable
+private fun TabSwitcher(
+    tab: DetailTab,
+    entryCount: Int,
+    conversationCount: Int,
+    onSwitch: (DetailTab) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 8.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(TrackGrey)
+            .padding(3.dp),
+    ) {
+        listOf(
+            DetailTab.ENTRIES to "记忆词条 ($entryCount)",
+            DetailTab.CONVERSATIONS to "原始对话 ($conversationCount)",
+        ).forEach { (value, label) ->
+            val on = tab == value
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (on) Canvas else Color.Transparent)
+                    .clickable { onSwitch(value) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 13.sp,
+                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                    color = if (on) Ink else TextSecondary,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ConversationCard(
+    conversation: PersonConversation,
+    onLongPress: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceMuted)
+            .border(BorderStroke(1.dp, Hairline), RoundedCornerShape(12.dp))
+            .combinedClickable(onClick = {}, onLongClick = onLongPress)
+            .padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = conversation.source.label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = BrandBlue,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = DateFormats.formatFull(conversation.createdAt),
+                fontSize = 11.sp,
+                color = Muted,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = conversation.content,
+            fontSize = 13.5.sp,
+            lineHeight = 21.sp,
+            color = TextBody,
+        )
+    }
 }

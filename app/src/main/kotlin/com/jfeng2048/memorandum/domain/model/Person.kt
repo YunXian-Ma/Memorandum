@@ -14,11 +14,13 @@ data class Person(
     val createdAt: Long,
     val updatedAt: Long,
     val entries: List<PersonEntry>,
+    val conversations: List<PersonConversation> = emptyList(),
 ) {
     val primaryRelationship: Relationship
         get() = relationships.firstOrNull() ?: Relationship.Unknown
 
     val entryCount: Int get() = entries.size
+    val conversationCount: Int get() = conversations.size
     val categoryCount: Int get() = entries.map { it.category.id }.distinct().size
 }
 
@@ -31,4 +33,23 @@ data class PersonEntry(
     val content: String,
     val createdAt: Long,
     val updatedAt: Long,
+)
+
+enum class ConversationSource(val label: String) {
+    CLIPBOARD("剪贴板收集"),
+    MANUAL("手动输入");
+
+    companion object {
+        fun fromName(name: String?): ConversationSource =
+            entries.firstOrNull { it.name == name } ?: MANUAL
+    }
+}
+
+/** 原始对话：按用户确认的文本原样保存，不做摘要 */
+data class PersonConversation(
+    val id: Long,
+    val personId: Long,
+    val content: String,
+    val source: ConversationSource,
+    val createdAt: Long,
 )

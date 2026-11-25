@@ -27,6 +27,8 @@ data class PersonCardUi(
     val relationships: List<Relationship>,
     val bio: String,
     val entryCount: Int,
+    val conversationCount: Int = 0,
+    val matchedConversation: Boolean = false,
     val updatedAt: Long,
     val matchedEntry: PersonEntry? = null,
 ) {

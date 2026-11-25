@@ -1,10 +1,13 @@
 package com.jfeng2048.memorandum.data.mapper
 
 import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
+import com.jfeng2048.memorandum.data.local.entity.ConversationEntity
 import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
 import com.jfeng2048.memorandum.data.local.relation.EntryWithCategory
 import com.jfeng2048.memorandum.data.local.relation.PersonWithEntries
+import com.jfeng2048.memorandum.domain.model.ConversationSource
 import com.jfeng2048.memorandum.domain.model.EntryCategory
+import com.jfeng2048.memorandum.domain.model.PersonConversation
 import com.jfeng2048.memorandum.domain.model.Gender
 import com.jfeng2048.memorandum.domain.model.Person
 import com.jfeng2048.memorandum.domain.model.PersonEntry
@@ -25,6 +28,9 @@ fun PersonWithEntries.toDomain(): Person = Person(
     updatedAt = person.updatedAt,
     entries = entries
         .sortedByDescending { it.entry.updatedAt }
+        .map { it.toDomain() },
+    conversations = conversations
+        .sortedByDescending { it.createdAt }
         .map { it.toDomain() },
 )
 
@@ -48,4 +54,12 @@ fun EntryWithCategory.toDomain(): PersonEntry = PersonEntry(
     content = entry.content.orEmpty(),
     createdAt = entry.createdAt,
     updatedAt = entry.updatedAt,
+)
+
+fun ConversationEntity.toDomain(): PersonConversation = PersonConversation(
+    id = id,
+    personId = personId,
+    content = content,
+    source = ConversationSource.fromName(source),
+    createdAt = createdAt,
 )

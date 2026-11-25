@@ -14,6 +14,7 @@ data class DetailUiState(
     val draftRelationshipIds: Set<Long> = emptySet(),
     val selectedCategoryId: Long? = null,
     val selectedEntryId: Long? = null,
+    val tab: DetailTab = DetailTab.ENTRIES,
     val notFound: Boolean = false,
     val errorMessage: String? = null,
 ) {
@@ -37,7 +38,11 @@ data class DetailUiState(
         }
 }
 
+enum class DetailTab { ENTRIES, CONVERSATIONS }
+
 sealed interface DetailEvent {
+    data class SwitchTab(val tab: DetailTab) : DetailEvent
+    data class DeleteConversation(val conversationId: Long) : DetailEvent
     data class SelectCategory(val categoryId: Long?) : DetailEvent
     data class SelectEntry(val entryId: Long?) : DetailEvent
     data object OpenRelationshipEditor : DetailEvent

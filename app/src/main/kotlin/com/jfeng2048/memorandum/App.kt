@@ -2,6 +2,7 @@ package com.jfeng2048.memorandum
 
 import android.app.Application
 import android.util.Log
+import com.jfeng2048.memorandum.feature.floating.AppForeground
 import com.jfeng2048.memorandum.domain.repository.PersonRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -25,6 +26,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         installCrashLogger()
+        AppForeground.register(this)
         appScope.launch {
             runCatching { personRepository.seedIfNeeded() }
                 .onFailure { Log.e(TAG, "写入演示数据失败", it) }

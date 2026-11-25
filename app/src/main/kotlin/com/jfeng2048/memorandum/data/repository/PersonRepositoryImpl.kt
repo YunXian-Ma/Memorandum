@@ -1,10 +1,12 @@
 package com.jfeng2048.memorandum.data.repository
 
 import com.jfeng2048.memorandum.data.local.dao.CategoryDao
+import com.jfeng2048.memorandum.data.local.dao.ConversationDao
 import com.jfeng2048.memorandum.data.local.dao.EntryDao
 import com.jfeng2048.memorandum.data.local.dao.PersonDao
 import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
 import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
+import com.jfeng2048.memorandum.data.local.entity.ConversationEntity
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonRelationshipCrossRef
@@ -12,7 +14,9 @@ import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
 import com.jfeng2048.memorandum.data.local.prefs.AppPreferences
 import com.jfeng2048.memorandum.data.mapper.toDomain
 import com.jfeng2048.memorandum.data.seed.SeedData
+import com.jfeng2048.memorandum.domain.model.ConversationSource
 import com.jfeng2048.memorandum.domain.model.EntryCategory
+import com.jfeng2048.memorandum.domain.model.PersonConversation
 import com.jfeng2048.memorandum.domain.model.Gender
 import com.jfeng2048.memorandum.domain.model.Person
 import com.jfeng2048.memorandum.domain.model.PersonEntry
@@ -21,6 +25,7 @@ import com.jfeng2048.memorandum.domain.repository.PersonRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 @Singleton
@@ -29,6 +34,7 @@ class PersonRepositoryImpl @Inject constructor(
     private val relationshipDao: RelationshipDao,
     private val categoryDao: CategoryDao,
     private val entryDao: EntryDao,
+    private val conversationDao: ConversationDao,
     private val preferences: AppPreferences,
 ) : PersonRepository {
 
@@ -217,6 +223,42 @@ class PersonRepositoryImpl @Inject constructor(
         val existing = entryDao.findById(entryId) ?: return
         entryDao.deleteById(entryId)
         personDao.touch(existing.personId, System.currentTimeMillis())
+    }
+
+    override suspend fun saveConversation(
+        personId: Long,
+        content: String,
+        source: ConversationSource,
+    ): Long {
+        val now = System.currentTimeMillis()
+        val id = conversationDao.insert(
+            ConversationEntity(
+                personId = personId,
+                content = content,
+                source = source.name,
+                createdAt = now,
+            ),
+        )
+        personDao.touch(personId, now)
+        return id
+    }
+
+    override suspend fun deleteConversation(conversationId: Long) {
+        conversationDao.deleteById(conversationId)
+    }
+
+    override fun observeRecentConversations(): Flow<List<PersonConversation>> =
+        conversationDao.observeRecent().map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun quickCreatePerson(name: String, bio: String): Long {
+        val relationships = relationshipDao.observeAll().first()
+        val default = relationships.firstOrNull { it.name == "其他" } ?: relationships.firstOrNull()
+        return createPerson(
+            name = name,
+            relationshipIds = listOfNotNull(default?.id),
+            gender = Gender.UNKNOWN,
+            bio = bio,
+        )
     }
 
     override suspend fun seedIfNeeded() {

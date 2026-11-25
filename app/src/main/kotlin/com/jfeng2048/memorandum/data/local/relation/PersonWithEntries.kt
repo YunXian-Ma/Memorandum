@@ -4,6 +4,7 @@ import androidx.room.Embedded
 import androidx.room.Junction
 import androidx.room.Relation
 import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
+import com.jfeng2048.memorandum.data.local.entity.ConversationEntity
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonRelationshipCrossRef
@@ -30,4 +31,6 @@ data class PersonWithEntries(
     val relationships: List<RelationshipEntity>,
     @Relation(entity = EntryEntity::class, parentColumn = "id", entityColumn = "personId")
     val entries: List<EntryWithCategory>,
+    @Relation(entity = ConversationEntity::class, parentColumn = "id", entityColumn = "personId")
+    val conversations: List<ConversationEntity> = emptyList(),
 )

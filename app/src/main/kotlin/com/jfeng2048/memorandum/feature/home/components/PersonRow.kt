@@ -94,6 +94,18 @@ fun PersonRow(
                         )
                     }
                 }
+                if (person.matchedConversation) {
+                    Spacer(Modifier.height(5.dp))
+                    Text(
+                        text = "命中原始对话",
+                        fontSize = 11.sp,
+                        color = TextBody,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(SurfaceMuted)
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                    )
+                }
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -106,7 +118,7 @@ fun PersonRow(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     Text(
-                        text = " · ${person.entryCount} 条 · ${DateFormats.formatUpdated(person.updatedAt)}",
+                        text = " · ${person.entryCount} 词条 · ${person.conversationCount} 对话 · ${DateFormats.formatUpdated(person.updatedAt)}",
                         fontSize = 11.sp,
                         color = Muted,
                     )

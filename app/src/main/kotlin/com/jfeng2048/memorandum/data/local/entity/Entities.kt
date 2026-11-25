@@ -102,3 +102,26 @@ data class EntryEntity(
     val createdAt: Long,
     val updatedAt: Long,
 )
+
+/** 原始对话表：保存用户确认后的聊天文本，随人物级联删除 */
+@Entity(
+    tableName = "conversations",
+    foreignKeys = [
+        ForeignKey(
+            entity = PersonEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["personId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("personId")],
+)
+data class ConversationEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val personId: Long,
+    val content: String,
+    /** "CLIPBOARD" / "MANUAL" */
+    val source: String,
+    val conversationTime: Long? = null,
+    val createdAt: Long,
+)

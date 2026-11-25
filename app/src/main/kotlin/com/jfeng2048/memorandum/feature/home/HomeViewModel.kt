@@ -2,6 +2,7 @@ package com.jfeng2048.memorandum.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jfeng2048.memorandum.data.local.prefs.AppPreferences
 import com.jfeng2048.memorandum.domain.model.HomeSort
 import com.jfeng2048.memorandum.domain.model.Person
 import com.jfeng2048.memorandum.domain.model.PersonEntry
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: PersonRepository,
+    private val preferences: AppPreferences,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
@@ -45,6 +47,14 @@ class HomeViewModel @Inject constructor(
 
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
+
+    private val _floatingEnabled = MutableStateFlow(preferences.floatingAssistantEnabled)
+    val floatingEnabled: StateFlow<Boolean> = _floatingEnabled.asStateFlow()
+
+    fun setFloatingEnabled(enabled: Boolean) {
+        preferences.floatingAssistantEnabled = enabled
+        _floatingEnabled.value = enabled
+    }
 
     private var observeJob: Job? = null
 
@@ -118,6 +128,12 @@ class HomeViewModel @Inject constructor(
                     relationships = person.relationships,
                     bio = person.bio,
                     entryCount = person.entryCount,
+                    conversationCount = person.conversationCount,
+                    matchedConversation = trimmedQuery.isNotEmpty() &&
+                        findMatchedEntry(person, trimmedQuery) == null &&
+                        person.conversations.any {
+                            it.content.contains(trimmedQuery, ignoreCase = true)
+                        },
                     updatedAt = person.updatedAt,
                     matchedEntry = findMatchedEntry(person, trimmedQuery),
                 )

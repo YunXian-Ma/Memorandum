@@ -47,6 +47,13 @@ class DetailViewModel @Inject constructor(
 
     fun onEvent(event: DetailEvent) {
         when (event) {
+            is DetailEvent.SwitchTab -> _uiState.update { it.copy(tab = event.tab) }
+            is DetailEvent.DeleteConversation -> viewModelScope.launch {
+                runCatching { repository.deleteConversation(event.conversationId) }
+                    .onSuccess { _effects.send(DetailEffect.ShowToast("已删除这段对话")) }
+                    .onFailure { _effects.send(DetailEffect.ShowToast(it.message ?: "删除失败")) }
+            }
+
             is DetailEvent.SelectCategory -> _uiState.update {
                 it.copy(selectedCategoryId = event.categoryId)
             }

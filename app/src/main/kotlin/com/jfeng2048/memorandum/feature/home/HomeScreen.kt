@@ -1,5 +1,21 @@
 package com.jfeng2048.memorandum.feature.home
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.jfeng2048.memorandum.feature.floating.FloatingAssistantService
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -57,6 +73,7 @@ import com.jfeng2048.memorandum.core.designsystem.theme.Canvas
 import com.jfeng2048.memorandum.core.designsystem.theme.Hairline
 import com.jfeng2048.memorandum.core.designsystem.theme.Ink
 import com.jfeng2048.memorandum.core.designsystem.theme.Muted
+import com.jfeng2048.memorandum.core.designsystem.theme.SurfaceMuted
 import com.jfeng2048.memorandum.core.designsystem.theme.TouchTarget
 import com.jfeng2048.memorandum.core.designsystem.theme.TextSecondary
 import com.jfeng2048.memorandum.core.designsystem.theme.TextTertiary
@@ -83,8 +100,57 @@ fun HomeScreen(
         }
     }
 
+    val context = LocalContext.current
+    val floatingEnabled by viewModel.floatingEnabled.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    fun startOrStop(enabled: Boolean) {
+        viewModel.setFloatingEnabled(enabled)
+        if (enabled) FloatingAssistantService.start(context) else FloatingAssistantService.stop(context)
+    }
+
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { }
+
+    // 从系统授权页返回后，若已授权则自动启动
+    DisposableEffect(lifecycleOwner, floatingEnabled) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && floatingEnabled) {
+                if (Settings.canDrawOverlays(context)) {
+                    FloatingAssistantService.start(context)
+                } else {
+                    viewModel.setFloatingEnabled(false)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     HomeContent(
         state = state,
+        floatingEnabled = floatingEnabled,
+        onToggleFloating = { want ->
+            if (!want) {
+                startOrStop(false)
+            } else {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                if (Settings.canDrawOverlays(context)) {
+                    startOrStop(true)
+                } else {
+                    viewModel.setFloatingEnabled(true)
+                    context.startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:${context.packageName}"),
+                        ),
+                    )
+                }
+            }
+        },
         onQueryChange = { viewModel.onEvent(HomeEvent.QueryChanged(it)) },
         onFilterChange = { viewModel.onEvent(HomeEvent.FilterChanged(it)) },
         onToggleSort = { viewModel.onEvent(HomeEvent.ToggleSort) },
@@ -99,6 +165,8 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     state: HomeUiState,
+    floatingEnabled: Boolean,
+    onToggleFloating: (Boolean) -> Unit,
     onQueryChange: (String) -> Unit,
     onFilterChange: (Long?) -> Unit,
     onToggleSort: () -> Unit,
@@ -157,7 +225,10 @@ private fun HomeContent(
                     ManageRelationshipsButton(onClick = onManageRelationships)
                 }
 
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(12.dp))
+                FloatingAssistantCard(enabled = floatingEnabled, onToggle = onToggleFloating)
+
+                Spacer(Modifier.height(12.dp))
                 SearchField(value = state.query, onValueChange = onQueryChange)
 
                 Spacer(Modifier.height(14.dp))
@@ -239,6 +310,48 @@ private fun PeopleList(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun FloatingAssistantCard(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (enabled) Color(0xFFF2F6FF) else SurfaceMuted)
+            .border(1.dp, Hairline, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "全局悬浮助手",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Ink,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = if (enabled) "已开启 · 在聊天软件里点悬浮球收集" else "开启后可在其他 App 上快速收集对话",
+                fontSize = 11.5.sp,
+                color = Muted,
+            )
+        }
+        Switch(
+            checked = enabled,
+            onCheckedChange = onToggle,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = BrandBlue,
+                checkedThumbColor = Color.White,
+                uncheckedTrackColor = TrackGrey,
+                uncheckedThumbColor = Color.White,
+                uncheckedBorderColor = Hairline,
+            ),
+        )
     }
 }
 

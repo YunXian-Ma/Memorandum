@@ -1,6 +1,8 @@
 package com.jfeng2048.memorandum.domain.repository
 
+import com.jfeng2048.memorandum.domain.model.ConversationSource
 import com.jfeng2048.memorandum.domain.model.EntryCategory
+import com.jfeng2048.memorandum.domain.model.PersonConversation
 import com.jfeng2048.memorandum.domain.model.Gender
 import com.jfeng2048.memorandum.domain.model.Person
 import com.jfeng2048.memorandum.domain.model.PersonEntry
@@ -87,6 +89,17 @@ interface PersonRepository {
     )
 
     suspend fun deleteEntry(entryId: Long)
+
+    /** 保存一段用户确认过的原始对话，并刷新人物更新时间 */
+    suspend fun saveConversation(personId: Long, content: String, source: ConversationSource): Long
+
+    suspend fun deleteConversation(conversationId: Long)
+
+    /** 全部人物最近收集的对话，按时间倒序 */
+    fun observeRecentConversations(): Flow<List<PersonConversation>>
+
+    /** 悬浮窗快速建人：默认挂到「其他」关系（不存在则取第一个） */
+    suspend fun quickCreatePerson(name: String, bio: String): Long
 
     /** 首次启动时写入演示数据，保证一打开就能看到完整界面 */
     suspend fun seedIfNeeded()
