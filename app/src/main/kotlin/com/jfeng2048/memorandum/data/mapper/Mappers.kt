@@ -15,7 +15,10 @@ fun PersonWithEntries.toDomain(): Person = Person(
     id = person.id,
     name = person.name,
     avatarUri = person.avatarUri,
-    relationship = relationship?.toDomain() ?: Relationship.Unknown,
+    relationships = relationships
+        .sortedWith(compareBy<RelationshipEntity> { it.sortOrder }.thenBy { it.id })
+        .map { it.toDomain() }
+        .ifEmpty { listOf(Relationship.Unknown) },
     gender = Gender.fromLabel(person.gender),
     bio = person.description.orEmpty(),
     createdAt = person.createdAt,

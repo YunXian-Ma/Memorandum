@@ -24,12 +24,15 @@ data class HomeUiState(
 data class PersonCardUi(
     val id: Long,
     val name: String,
-    val relationship: Relationship,
+    val relationships: List<Relationship>,
     val bio: String,
     val entryCount: Int,
     val updatedAt: Long,
     val matchedEntry: PersonEntry? = null,
-)
+) {
+    val primaryRelationship: Relationship
+        get() = relationships.firstOrNull() ?: Relationship.Unknown
+}
 
 sealed interface HomeEvent {
     data class QueryChanged(val value: String) : HomeEvent

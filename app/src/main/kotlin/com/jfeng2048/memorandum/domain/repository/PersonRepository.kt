@@ -51,7 +51,7 @@ interface PersonRepository {
 
     suspend fun createPerson(
         name: String,
-        relationshipId: Long,
+        relationshipIds: List<Long>,
         gender: Gender,
         bio: String,
     ): Long
@@ -59,9 +59,14 @@ interface PersonRepository {
     suspend fun updatePerson(
         personId: Long,
         name: String,
-        relationshipId: Long,
+        relationshipIds: List<Long>,
         gender: Gender,
         bio: String,
+    )
+
+    suspend fun updatePersonRelationships(
+        personId: Long,
+        relationshipIds: List<Long>,
     )
 
     /** 删除人物，关联词条由数据库外键级联删除 */

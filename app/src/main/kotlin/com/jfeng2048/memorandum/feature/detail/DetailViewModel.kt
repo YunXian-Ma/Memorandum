@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -54,6 +55,37 @@ class DetailViewModel @Inject constructor(
                 it.copy(selectedEntryId = event.entryId)
             }
 
+            DetailEvent.OpenRelationshipEditor -> _uiState.update { state ->
+                val currentIds = state.person?.relationships
+                    ?.map { it.id }
+                    ?.filter { it > 0L }
+                    ?.toSet()
+                    .orEmpty()
+                    .ifEmpty {
+                        state.allRelationships.firstOrNull()?.id?.let { setOf(it) }.orEmpty()
+                    }
+                state.copy(
+                    relationshipSheetOpen = true,
+                    draftRelationshipIds = currentIds,
+                )
+            }
+
+            DetailEvent.DismissRelationshipEditor -> _uiState.update {
+                it.copy(relationshipSheetOpen = false)
+            }
+
+            is DetailEvent.ToggleDraftRelationship -> _uiState.update { state ->
+                val current = state.draftRelationshipIds
+                val updated = if (event.relationshipId in current) {
+                    if (current.size > 1) current - event.relationshipId else current
+                } else {
+                    current + event.relationshipId
+                }
+                state.copy(draftRelationshipIds = updated)
+            }
+
+            DetailEvent.SaveRelationships -> saveRelationships()
+
             is DetailEvent.DeleteEntry -> deleteEntry(event.entryId)
             DetailEvent.DeletePerson -> deletePerson()
             DetailEvent.EditPerson -> _effects.trySend(DetailEffect.EditPerson(personId))
@@ -69,7 +101,12 @@ class DetailViewModel @Inject constructor(
 
     private fun startObserving() {
         observeJob?.cancel()
-        observeJob = repository.observePerson(personId)
+        observeJob = combine(
+            repository.observePerson(personId),
+            repository.observeRelationships(),
+        ) { person, relationships ->
+            person to relationships
+        }
             .onStart {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             }
@@ -81,7 +118,7 @@ class DetailViewModel @Inject constructor(
                     )
                 }
             }
-            .onEach { person ->
+            .onEach { (person, relationships) ->
                 _uiState.update { state ->
                     val categoryId = state.selectedCategoryId?.takeIf { selected ->
                         person?.entries?.any { it.category.id == selected } == true
@@ -92,6 +129,7 @@ class DetailViewModel @Inject constructor(
                     state.copy(
                         isLoading = false,
                         person = person,
+                        allRelationships = relationships,
                         notFound = person == null,
                         selectedCategoryId = categoryId,
                         selectedEntryId = entryId,
@@ -100,6 +138,24 @@ class DetailViewModel @Inject constructor(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun saveRelationships() {
+        val state = _uiState.value
+        val orderedIds = state.allRelationships
+            .map { it.id }
+            .filter { it in state.draftRelationshipIds }
+        if (orderedIds.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repository.updatePersonRelationships(personId, orderedIds) }
+                .onSuccess {
+                    _uiState.update { it.copy(relationshipSheetOpen = false) }
+                    _effects.send(DetailEffect.ShowToast("已更新关系"))
+                }
+                .onFailure { error ->
+                    _effects.send(DetailEffect.ShowToast(error.message ?: "更新失败"))
+                }
+        }
     }
 
     private fun deleteEntry(entryId: Long) {

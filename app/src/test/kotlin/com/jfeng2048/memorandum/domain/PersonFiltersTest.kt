@@ -22,7 +22,7 @@ class PersonFiltersTest {
     private fun person(
         id: Long,
         name: String,
-        relationship: Relationship,
+        relationships: List<Relationship>,
         bio: String = "",
         updatedAt: Long = 0L,
         entries: List<PersonEntry> = emptyList(),
@@ -30,7 +30,7 @@ class PersonFiltersTest {
         id = id,
         name = name,
         avatarUri = null,
-        relationship = relationship,
+        relationships = relationships,
         gender = Gender.UNKNOWN,
         bio = bio,
         createdAt = 0L,
@@ -58,7 +58,7 @@ class PersonFiltersTest {
         val chen = person(
             id = 1,
             name = "陈知远",
-            relationship = friend,
+            relationships = listOf(friend),
             entries = listOf(entry(1, "篮球", "每周三晚在城西打半场")),
         )
 
@@ -70,7 +70,7 @@ class PersonFiltersTest {
         val chen = person(
             id = 1,
             name = "陈知远",
-            relationship = friend,
+            relationships = listOf(friend),
             entries = listOf(entry(1, "篮球", "膝盖有旧伤，别约太激烈的")),
         )
 
@@ -79,7 +79,7 @@ class PersonFiltersTest {
 
     @Test
     fun `关键词不会误命中无关人物`() {
-        val person = person(id = 2, name = "苏晚", relationship = classmate)
+        val person = person(id = 2, name = "苏晚", relationships = listOf(classmate))
 
         assertFalse(PersonFilters.matches(person, "篮球"))
     }
@@ -87,9 +87,9 @@ class PersonFiltersTest {
     @Test
     fun `关系筛选只保留对应关系`() {
         val people = listOf(
-            person(id = 1, name = "陈知远", relationship = friend),
-            person(id = 2, name = "林嘉禾", relationship = colleague),
-            person(id = 3, name = "何岸", relationship = colleague),
+            person(id = 1, name = "陈知远", relationships = listOf(friend)),
+            person(id = 2, name = "林嘉禾", relationships = listOf(colleague, friend)),
+            person(id = 3, name = "何岸", relationships = listOf(colleague)),
         )
 
         val result = PersonFilters.filter(people, query = "", relationshipId = colleague.id)
@@ -100,9 +100,9 @@ class PersonFiltersTest {
     @Test
     fun `最近更新排序为倒序`() {
         val people = listOf(
-            person(id = 1, name = "陈知远", relationship = friend, updatedAt = 100L),
-            person(id = 2, name = "林嘉禾", relationship = colleague, updatedAt = 300L),
-            person(id = 3, name = "何岸", relationship = colleague, updatedAt = 200L),
+            person(id = 1, name = "陈知远", relationships = listOf(friend), updatedAt = 100L),
+            person(id = 2, name = "林嘉禾", relationships = listOf(colleague), updatedAt = 300L),
+            person(id = 3, name = "何岸", relationships = listOf(colleague), updatedAt = 200L),
         )
 
         val result = PersonFilters.sort(people, HomeSort.RECENT)

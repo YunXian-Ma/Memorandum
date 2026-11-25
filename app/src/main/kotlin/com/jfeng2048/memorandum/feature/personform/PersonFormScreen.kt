@@ -110,7 +110,7 @@ fun PersonFormScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         PersonAvatar(
                             name = state.name.ifBlank { "?" },
-                            relationship = state.selectedRelationship,
+                            relationship = state.primarySelectedRelationship,
                             size = 62.dp,
                         )
                         Spacer(Modifier.width(16.dp))
@@ -133,7 +133,7 @@ fun PersonFormScreen(
                     )
 
                     Spacer(Modifier.height(22.dp))
-                    SectionLabel(text = "关系")
+                    SectionLabel(text = "关系 · 可多选")
                     Spacer(Modifier.height(10.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -142,10 +142,10 @@ fun PersonFormScreen(
                         state.relationships.forEach { relationship ->
                             RelationshipChip(
                                 relationship = relationship,
-                                selected = state.relationshipId == relationship.id,
+                                selected = relationship.id in state.selectedRelationshipIds,
                                 onClick = {
                                     viewModel.onEvent(
-                                        PersonFormEvent.RelationshipChanged(relationship.id),
+                                        PersonFormEvent.RelationshipToggled(relationship.id),
                                     )
                                 },
                             )

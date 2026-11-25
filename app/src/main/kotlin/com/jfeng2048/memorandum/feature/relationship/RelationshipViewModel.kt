@@ -83,7 +83,9 @@ class RelationshipViewModel @Inject constructor(
                     id = relationship.id,
                     name = relationship.name,
                     colorIndex = relationship.colorIndex,
-                    peopleCount = people.count { it.relationship.id == relationship.id },
+                    peopleCount = people.count { person ->
+                        person.relationships.any { it.id == relationship.id }
+                    },
                 )
             }
         }

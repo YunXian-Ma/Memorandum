@@ -101,7 +101,10 @@ class HomeViewModel @Inject constructor(
             filters.sort,
         )
         val trimmedQuery = filters.query.trim()
-        val counts = data.people.groupingBy { it.relationship.id }.eachCount()
+        val counts = data.people
+            .flatMap { person -> person.relationships.map { it.id }.distinct() }
+            .groupingBy { it }
+            .eachCount()
         return HomeUiState(
             isLoading = false,
             query = filters.query,
@@ -112,7 +115,7 @@ class HomeViewModel @Inject constructor(
                 PersonCardUi(
                     id = person.id,
                     name = person.name,
-                    relationship = person.relationship,
+                    relationships = person.relationships,
                     bio = person.bio,
                     entryCount = person.entryCount,
                     updatedAt = person.updatedAt,

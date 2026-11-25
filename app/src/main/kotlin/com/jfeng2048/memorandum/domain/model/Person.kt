@@ -8,13 +8,16 @@ data class Person(
     val id: Long,
     val name: String,
     val avatarUri: String?,
-    val relationship: Relationship,
+    val relationships: List<Relationship>,
     val gender: Gender,
     val bio: String,
     val createdAt: Long,
     val updatedAt: Long,
     val entries: List<PersonEntry>,
 ) {
+    val primaryRelationship: Relationship
+        get() = relationships.firstOrNull() ?: Relationship.Unknown
+
     val entryCount: Int get() = entries.size
     val categoryCount: Int get() = entries.map { it.category.id }.distinct().size
 }

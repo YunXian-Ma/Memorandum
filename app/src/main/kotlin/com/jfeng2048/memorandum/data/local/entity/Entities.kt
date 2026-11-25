@@ -29,11 +29,33 @@ data class RelationshipEntity(
 
 /**
  * 人物表。
- * relationshipId 外键 + RESTRICT：关系被人物引用时不允许删除。
+ */
+@Entity(tableName = "persons")
+data class PersonEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val avatarUri: String? = null,
+    val gender: String? = null,
+    val description: String? = null,
+    val createdAt: Long,
+    val updatedAt: Long,
+)
+
+/**
+ * 人物与关系的多对多关联表：
+ * - 删除人物时级联删除关联（CASCADE）
+ * - 关系被人物引用时不允许删除（RESTRICT）
  */
 @Entity(
-    tableName = "persons",
+    tableName = "person_relationships",
+    primaryKeys = ["personId", "relationshipId"],
     foreignKeys = [
+        ForeignKey(
+            entity = PersonEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["personId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
         ForeignKey(
             entity = RelationshipEntity::class,
             parentColumns = ["id"],
@@ -41,17 +63,11 @@ data class RelationshipEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("relationshipId")],
+    indices = [Index("personId"), Index("relationshipId")],
 )
-data class PersonEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    val avatarUri: String? = null,
+data class PersonRelationshipCrossRef(
+    val personId: Long,
     val relationshipId: Long,
-    val gender: String? = null,
-    val description: String? = null,
-    val createdAt: Long,
-    val updatedAt: Long,
 )
 
 /**

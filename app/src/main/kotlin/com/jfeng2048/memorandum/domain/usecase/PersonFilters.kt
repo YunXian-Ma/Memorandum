@@ -28,7 +28,8 @@ object PersonFilters {
         query: String,
         relationshipId: Long?,
     ): List<Person> = people.filter { person ->
-        (relationshipId == null || person.relationship.id == relationshipId) && matches(person, query)
+        (relationshipId == null || person.relationships.any { it.id == relationshipId }) &&
+            matches(person, query)
     }
 
     fun sort(people: List<Person>, sort: HomeSort): List<Person> = when (sort) {

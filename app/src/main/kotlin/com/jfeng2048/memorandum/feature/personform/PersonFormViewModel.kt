@@ -55,8 +55,15 @@ class PersonFormViewModel @Inject constructor(
                 it.copy(name = event.value)
             }
 
-            is PersonFormEvent.RelationshipChanged -> _uiState.update {
-                it.copy(relationshipId = event.relationshipId)
+            is PersonFormEvent.RelationshipToggled -> _uiState.update { state ->
+                val current = state.selectedRelationshipIds
+                val updated = if (event.relationshipId in current) {
+                    // 至少保留一个关系，避免取消到空
+                    if (current.size > 1) current - event.relationshipId else current
+                } else {
+                    current + event.relationshipId
+                }
+                state.copy(selectedRelationshipIds = updated)
             }
 
             is PersonFormEvent.GenderChanged -> _uiState.update {
@@ -80,12 +87,12 @@ class PersonFormViewModel @Inject constructor(
         repository.observeRelationships()
             .onEach { relationships ->
                 _uiState.update { state ->
-                    val stillValid = relationships.any { it.id == state.relationshipId }
+                    val validIds = relationships.map { it.id }.toSet()
+                    val filtered = state.selectedRelationshipIds.filter { it in validIds }.toSet()
                     state.copy(
                         relationships = relationships,
-                        relationshipId = when {
-                            stillValid -> state.relationshipId
-                            else -> relationships.firstOrNull()?.id
+                        selectedRelationshipIds = filtered.ifEmpty {
+                            relationships.firstOrNull()?.id?.let { setOf(it) }.orEmpty()
                         },
                     )
                 }
@@ -110,7 +117,11 @@ class PersonFormViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 name = person.name,
-                                relationshipId = person.relationship.id,
+                                selectedRelationshipIds = person.relationships
+                                    .map { rel -> rel.id }
+                                    .filter { id -> id > 0L }
+                                    .toSet()
+                                    .ifEmpty { it.selectedRelationshipIds },
                                 gender = person.gender,
                                 bio = person.bio,
                                 errorMessage = null,
@@ -131,15 +142,17 @@ class PersonFormViewModel @Inject constructor(
 
     private fun save() {
         val state = _uiState.value
-        val relationshipId = state.relationshipId
-        if (!state.canSave || relationshipId == null) return
+        val orderedIds = state.relationships
+            .map { it.id }
+            .filter { it in state.selectedRelationshipIds }
+        if (!state.canSave || orderedIds.isEmpty()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
             runCatching {
                 if (personId == null) {
                     repository.createPerson(
                         name = state.name.trim(),
-                        relationshipId = relationshipId,
+                        relationshipIds = orderedIds,
                         gender = state.gender,
                         bio = state.bio.trim(),
                     )
@@ -147,7 +160,7 @@ class PersonFormViewModel @Inject constructor(
                     repository.updatePerson(
                         personId = personId,
                         name = state.name.trim(),
-                        relationshipId = relationshipId,
+                        relationshipIds = orderedIds,
                         gender = state.gender,
                         bio = state.bio.trim(),
                     )

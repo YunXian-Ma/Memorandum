@@ -9,11 +9,18 @@ import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
 import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
+import com.jfeng2048.memorandum.data.local.entity.PersonRelationshipCrossRef
 import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
 
 @Database(
-    entities = [PersonEntity::class, RelationshipEntity::class, CategoryEntity::class, EntryEntity::class],
-    version = 3,
+    entities = [
+        PersonEntity::class,
+        RelationshipEntity::class,
+        PersonRelationshipCrossRef::class,
+        CategoryEntity::class,
+        EntryEntity::class,
+    ],
+    version = 4,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

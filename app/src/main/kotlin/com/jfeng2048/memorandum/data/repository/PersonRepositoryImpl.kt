@@ -7,6 +7,7 @@ import com.jfeng2048.memorandum.data.local.dao.RelationshipDao
 import com.jfeng2048.memorandum.data.local.entity.CategoryEntity
 import com.jfeng2048.memorandum.data.local.entity.EntryEntity
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
+import com.jfeng2048.memorandum.data.local.entity.PersonRelationshipCrossRef
 import com.jfeng2048.memorandum.data.local.entity.RelationshipEntity
 import com.jfeng2048.memorandum.data.local.prefs.AppPreferences
 import com.jfeng2048.memorandum.data.mapper.toDomain
@@ -104,40 +105,67 @@ class PersonRepositoryImpl @Inject constructor(
 
     override suspend fun createPerson(
         name: String,
-        relationshipId: Long,
+        relationshipIds: List<Long>,
         gender: Gender,
         bio: String,
     ): Long {
         val now = System.currentTimeMillis()
-        return personDao.insert(
+        val personId = personDao.insert(
             PersonEntity(
                 name = name,
-                relationshipId = relationshipId,
                 gender = gender.label,
                 description = bio.takeIf { it.isNotBlank() },
                 createdAt = now,
                 updatedAt = now,
             ),
         )
+        val refs = relationshipIds.distinct().map { relId ->
+            PersonRelationshipCrossRef(personId = personId, relationshipId = relId)
+        }
+        if (refs.isNotEmpty()) {
+            personDao.insertPersonRelationships(refs)
+        }
+        return personId
     }
 
     override suspend fun updatePerson(
         personId: Long,
         name: String,
-        relationshipId: Long,
+        relationshipIds: List<Long>,
         gender: Gender,
         bio: String,
     ) {
         val existing = personDao.findById(personId) ?: return
+        val now = System.currentTimeMillis()
         personDao.update(
             existing.copy(
                 name = name,
-                relationshipId = relationshipId,
                 gender = gender.label,
                 description = bio.takeIf { it.isNotBlank() },
-                updatedAt = System.currentTimeMillis(),
+                updatedAt = now,
             ),
         )
+        personDao.deletePersonRelationships(personId)
+        val refs = relationshipIds.distinct().map { relId ->
+            PersonRelationshipCrossRef(personId = personId, relationshipId = relId)
+        }
+        if (refs.isNotEmpty()) {
+            personDao.insertPersonRelationships(refs)
+        }
+    }
+
+    override suspend fun updatePersonRelationships(
+        personId: Long,
+        relationshipIds: List<Long>,
+    ) {
+        personDao.deletePersonRelationships(personId)
+        val refs = relationshipIds.distinct().map { relId ->
+            PersonRelationshipCrossRef(personId = personId, relationshipId = relId)
+        }
+        if (refs.isNotEmpty()) {
+            personDao.insertPersonRelationships(refs)
+        }
+        personDao.touch(personId, System.currentTimeMillis())
     }
 
     override suspend fun deletePerson(personId: Long) {

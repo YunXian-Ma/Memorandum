@@ -2,10 +2,12 @@ package com.jfeng2048.memorandum.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.jfeng2048.memorandum.data.local.entity.PersonEntity
+import com.jfeng2048.memorandum.data.local.entity.PersonRelationshipCrossRef
 import com.jfeng2048.memorandum.data.local.relation.PersonWithEntries
 import kotlinx.coroutines.flow.Flow
 
@@ -23,11 +25,17 @@ interface PersonDao {
     @Query("SELECT * FROM persons WHERE id = :personId")
     suspend fun findById(personId: Long): PersonEntity?
 
-    @Query("SELECT COUNT(*) FROM persons WHERE relationshipId = :relationshipId")
+    @Query("SELECT COUNT(*) FROM person_relationships WHERE relationshipId = :relationshipId")
     suspend fun countByRelationship(relationshipId: Long): Int
 
     @Insert
     suspend fun insert(person: PersonEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertPersonRelationships(crossRefs: List<PersonRelationshipCrossRef>)
+
+    @Query("DELETE FROM person_relationships WHERE personId = :personId")
+    suspend fun deletePersonRelationships(personId: Long)
 
     @Update
     suspend fun update(person: PersonEntity)

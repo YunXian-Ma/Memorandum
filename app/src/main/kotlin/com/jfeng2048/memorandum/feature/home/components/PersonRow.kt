@@ -42,7 +42,8 @@ fun PersonRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tint = relationshipTint(person.relationship)
+    val primary = person.primaryRelationship
+    val tint = relationshipTint(primary)
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -53,7 +54,7 @@ fun PersonRow(
         ) {
             PersonAvatar(
                 name = person.name,
-                relationship = person.relationship,
+                relationship = primary,
                 size = 44.dp,
             )
             Spacer(Modifier.width(13.dp))
@@ -96,10 +97,13 @@ fun PersonRow(
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = person.relationship.name,
+                        text = person.relationships.joinToString(" · ") { it.name },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = tint.foreground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                     Text(
                         text = " · ${person.entryCount} 条 · ${DateFormats.formatUpdated(person.updatedAt)}",

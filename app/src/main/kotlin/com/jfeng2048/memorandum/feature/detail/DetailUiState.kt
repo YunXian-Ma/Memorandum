@@ -3,11 +3,15 @@ package com.jfeng2048.memorandum.feature.detail
 import com.jfeng2048.memorandum.domain.model.EntryCategory
 import com.jfeng2048.memorandum.domain.model.Person
 import com.jfeng2048.memorandum.domain.model.PersonEntry
+import com.jfeng2048.memorandum.domain.model.Relationship
 
 /** 详情页状态：词条浮层的选中 id 也放在这里，保证旋转屏幕后不丢 */
 data class DetailUiState(
     val isLoading: Boolean = true,
     val person: Person? = null,
+    val allRelationships: List<Relationship> = emptyList(),
+    val relationshipSheetOpen: Boolean = false,
+    val draftRelationshipIds: Set<Long> = emptySet(),
     val selectedCategoryId: Long? = null,
     val selectedEntryId: Long? = null,
     val notFound: Boolean = false,
@@ -36,6 +40,10 @@ data class DetailUiState(
 sealed interface DetailEvent {
     data class SelectCategory(val categoryId: Long?) : DetailEvent
     data class SelectEntry(val entryId: Long?) : DetailEvent
+    data object OpenRelationshipEditor : DetailEvent
+    data object DismissRelationshipEditor : DetailEvent
+    data class ToggleDraftRelationship(val relationshipId: Long) : DetailEvent
+    data object SaveRelationships : DetailEvent
     data class DeleteEntry(val entryId: Long) : DetailEvent
     data object DeletePerson : DetailEvent
     data object EditPerson : DetailEvent
