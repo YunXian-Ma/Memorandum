@@ -9,7 +9,7 @@
 | 项 | 版本 | 说明 |
 | --- | --- | --- |
 | JDK | 17 | Gradle 与 AGP 9.x 的硬性要求 |
-| Gradle | 9.6 | 由 `gradle/wrapper/gradle-wrapper.properties` 决定 |
+| Gradle | 9.6 | 由 `../../gradle/wrapper/gradle-wrapper.properties` 决定 |
 | AGP | 9.5.2 | 内置 Kotlin 支持，工程不再单独 apply `kotlin-android` |
 | Kotlin | 2.2.10 | `org.jetbrains.kotlin.plugin.compose` 版本 |
 | KSP | 2.2.10-2.0.2 | 与 Kotlin 版本严格对应，升级必须成对 |
@@ -303,7 +303,7 @@ Debug 包可直接安装，用于自测与联调。
 
 ### 8.2 Release（未配置签名时）
 
-`app/build.gradle.kts` 中的 release 构建类型开启了 AGP 9 的优化块：
+`../../app/build.gradle.kts` 中的 release 构建类型开启了 AGP 9 的优化块：
 
 ```kotlin
 release {
@@ -327,7 +327,7 @@ keytool -genkeypair -v \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-2) 在 `~/.gradle/gradle.properties` 或工程 `gradle.properties`（不要提交到 Git）中写入：
+2) 在 `~/.gradle/gradle.properties` 或工程 `../../gradle.properties`（不要提交到 Git）中写入：
 
 ```properties
 RELEASE_STORE_FILE=/absolute/path/memorandum-release.jks
@@ -336,7 +336,7 @@ RELEASE_KEY_ALIAS=memorandum
 RELEASE_KEY_PASSWORD=******
 ```
 
-3) 在 `app/build.gradle.kts` 增加：
+3) 在 `../../app/build.gradle.kts` 增加：
 
 ```kotlin
 android {
@@ -431,7 +431,7 @@ adb shell dumpsys activity activities | grep memorandum        # 查看任务栈
 
 **Q1：AGP 9 内置 Kotlin 与 KSP / Hilt 冲突怎么办？**
 
-AGP 9 起 Kotlin 编译内置，工程不再 apply `org.jetbrains.kotlin.android`。若 Sync 报「KSP 需要 Kotlin Gradle Plugin」一类错误，可在 `gradle.properties` 中关闭内置 Kotlin 并显式应用 KGP：
+AGP 9 起 Kotlin 编译内置，工程不再 apply `org.jetbrains.kotlin.android`。若 Sync 报「KSP 需要 Kotlin Gradle Plugin」一类错误，可在 `../../gradle.properties` 中关闭内置 Kotlin 并显式应用 KGP：
 
 ```properties
 android.builtInKotlin=false
@@ -444,7 +444,7 @@ plugins {
 }
 ```
 
-然后在 `app/build.gradle.kts` 的 `plugins` 中 `alias(libs.plugins.kotlin.android)`。两种模式二选一，不要同时开。
+然后在 `../../app/build.gradle.kts` 的 `plugins` 中 `alias(libs.plugins.kotlin.android)`。两种模式二选一，不要同时开。
 
 **Q2：KSP 版本为什么必须和 Kotlin 对齐？**
 

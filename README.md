@@ -3,7 +3,7 @@
 一款纯本地的人物档案备忘录：记下你认识的人，再为每个人补充一条条可检索的「词条」（爱好、饮食、性格、重要日期……）。
 
 - 无账号、无网络、无埋点，数据只存在手机本地（Room）。
-- 单 Activity + Jetpack Compose Material3，界面按 `docs/prototype/prototype.html` 还原。
+- 单 Activity + Jetpack Compose Material3，界面按 `docs/prototype/v1.0.0.html` 还原。
 - 首次启动自动写入 6 个默认关系，通讯录从空开始，不预置任何人物与词条。
 
 ## 功能一览
