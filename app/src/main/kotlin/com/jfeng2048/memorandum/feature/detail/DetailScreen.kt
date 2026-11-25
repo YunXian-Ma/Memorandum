@@ -9,6 +9,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,12 +30,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,12 +58,14 @@ import com.jfeng2048.memorandum.core.designsystem.component.ConfirmDialog
 import com.jfeng2048.memorandum.core.designsystem.component.ErrorView
 import com.jfeng2048.memorandum.core.designsystem.component.LoadingView
 import com.jfeng2048.memorandum.core.designsystem.component.PersonAvatar
+import com.jfeng2048.memorandum.core.designsystem.component.RelationshipChip
 import com.jfeng2048.memorandum.core.designsystem.component.RelationshipTag
 import com.jfeng2048.memorandum.core.designsystem.component.SimpleTopBar
 import com.jfeng2048.memorandum.core.designsystem.component.ToastHost
 import com.jfeng2048.memorandum.core.designsystem.component.TopBarAction
 import com.jfeng2048.memorandum.core.designsystem.theme.BrandBlue
 import com.jfeng2048.memorandum.core.designsystem.theme.Canvas
+import com.jfeng2048.memorandum.core.designsystem.theme.ChevronGrey
 import com.jfeng2048.memorandum.core.designsystem.theme.DangerRed
 import com.jfeng2048.memorandum.core.designsystem.theme.Hairline
 import com.jfeng2048.memorandum.core.designsystem.theme.Ink
@@ -75,6 +81,7 @@ import com.jfeng2048.memorandum.core.designsystem.theme.categoryColor
 import com.jfeng2048.memorandum.core.designsystem.theme.relationshipTint
 import com.jfeng2048.memorandum.core.util.DateFormats
 import com.jfeng2048.memorandum.domain.model.Person
+import com.jfeng2048.memorandum.domain.model.Relationship
 import com.jfeng2048.memorandum.feature.detail.components.EntryCardOverlay
 import com.jfeng2048.memorandum.feature.detail.components.EntryRow
 
@@ -135,6 +142,7 @@ fun DetailScreen(
                 onMenuOpenChange = { menuOpen = it },
                 onBack = { viewModel.onEvent(DetailEvent.Back) },
                 onEditPerson = { viewModel.onEvent(DetailEvent.EditPerson) },
+                onOpenRelationshipEditor = { viewModel.onEvent(DetailEvent.OpenRelationshipEditor) },
                 onRequestDeletePerson = { confirmDeletePerson = true },
                 onAddEntry = { viewModel.onEvent(DetailEvent.AddEntry) },
                 onSelectCategory = { viewModel.onEvent(DetailEvent.SelectCategory(it)) },
@@ -173,6 +181,16 @@ fun DetailScreen(
         )
     }
 
+    if (state.relationshipSheetOpen) {
+        EditRelationshipsDialog(
+            relationships = state.allRelationships,
+            selectedIds = state.draftRelationshipIds,
+            onToggle = { viewModel.onEvent(DetailEvent.ToggleDraftRelationship(it)) },
+            onConfirm = { viewModel.onEvent(DetailEvent.SaveRelationships) },
+            onDismiss = { viewModel.onEvent(DetailEvent.DismissRelationshipEditor) },
+        )
+    }
+
     deleteEntryId?.let { entryId ->
         ConfirmDialog(
             title = "删除这条词条？",
@@ -186,6 +204,7 @@ fun DetailScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DetailContent(
     state: DetailUiState,
@@ -194,12 +213,14 @@ private fun DetailContent(
     onMenuOpenChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onEditPerson: () -> Unit,
+    onOpenRelationshipEditor: () -> Unit,
     onRequestDeletePerson: () -> Unit,
     onAddEntry: () -> Unit,
     onSelectCategory: (Long?) -> Unit,
     onSelectEntry: (Long) -> Unit,
 ) {
-    val tint = relationshipTint(person.relationship)
+    val primaryRelationship = person.primaryRelationship
+    val tint = relationshipTint(primaryRelationship)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -228,6 +249,19 @@ private fun DetailContent(
                         DropdownMenuItem(
                             text = {
                                 Text(
+                                    text = "设置关系",
+                                    color = Ink,
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            onClick = {
+                                onMenuOpenChange(false)
+                                onOpenRelationshipEditor()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
                                     text = "删除人物",
                                     color = DangerRed,
                                     fontSize = 14.sp,
@@ -248,7 +282,7 @@ private fun DetailContent(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     PersonAvatar(
                         name = person.name,
-                        relationship = person.relationship,
+                        relationship = primaryRelationship,
                         size = 64.dp,
                         ring = true,
                     )
@@ -260,17 +294,37 @@ private fun DetailContent(
                             color = Ink,
                         )
                         Spacer(Modifier.height(7.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RelationshipTag(relationship = person.relationship)
-                            Spacer(Modifier.width(7.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            itemVerticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            person.relationships.forEach { relationship ->
+                                RelationshipTag(
+                                    relationship = relationship,
+                                    modifier = Modifier.clickable(onClick = onOpenRelationshipEditor),
+                                )
+                            }
                             Text(
-                                text = "${person.gender.label} · 更新于 ${
-                                    DateFormats.formatUpdated(person.updatedAt)
-                                }",
-                                fontSize = 12.sp,
-                                color = Muted,
+                                text = "+ 改关系",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = BrandBlue,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(SurfaceMuted)
+                                    .clickable(onClick = onOpenRelationshipEditor)
+                                    .padding(horizontal = 8.dp, vertical = 2.5.dp),
                             )
                         }
+                        Spacer(Modifier.height(5.dp))
+                        Text(
+                            text = "${person.gender.label} · 更新于 ${
+                                DateFormats.formatUpdated(person.updatedAt)
+                            }",
+                            fontSize = 12.sp,
+                            color = Muted,
+                        )
                     }
                 }
 
@@ -468,4 +522,67 @@ private fun NotFoundContent(onBack: () -> Unit) {
             )
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EditRelationshipsDialog(
+    relationships: List<Relationship>,
+    selectedIds: Set<Long>,
+    onToggle: (Long) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "设置人物关系",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = Ink,
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "一个人可以同时属于多个关系，至少保留一个。",
+                    fontSize = 12.sp,
+                    color = Muted,
+                )
+                Spacer(Modifier.height(14.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    relationships.forEach { relationship ->
+                        RelationshipChip(
+                            relationship = relationship,
+                            selected = relationship.id in selectedIds,
+                            onClick = { onToggle(relationship.id) },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = selectedIds.isNotEmpty(),
+            ) {
+                Text(
+                    text = "保存",
+                    color = if (selectedIds.isNotEmpty()) BrandBlue else ChevronGrey,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "取消", color = Muted)
+            }
+        },
+        containerColor = Canvas,
+        shape = RoundedCornerShape(14.dp),
+    )
 }
