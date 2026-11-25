@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Memorandum V1.1 · 方向一 白纸叠卡悬浮便签</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #F1F2F5; font-family: "Noto Sans SC", -apple-system, sans-serif; color: #1D1D1F; -webkit-font-smoothing: antialiased; }
+  input, textarea, button { font-family: inherit; }
+  input:focus, textarea:focus { outline: none; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+const androidFrameStyles = {
+  wrapper: {
+    display: 'inline-block',
+    padding: 10,
+    background: '#1a1a1a',
+    borderRadius: 44,
+    boxShadow: '0 0 0 2px #2a2a2a, 0 20px 60px rgba(0,0,0,0.22)',
+    position: 'relative',
+  },
+  screen: {
+    position: 'relative',
+    borderRadius: 36,
+    overflow: 'hidden',
+    background: '#fff',
+  },
+  statusBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 24px',
+    fontSize: 13,
+    fontWeight: 500,
+    fontFamily: 'Roboto, -apple-system, sans-serif',
+    zIndex: 20,
+    pointerEvents: 'none',
+  },
+  punchHole: {
+    position: 'absolute',
+    top: 10,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 14,
+    height: 14,
+    background: '#000',
+    borderRadius: '50%',
+    zIndex: 30,
+  },
+  statusIcons: { display: 'flex', alignItems: 'center', gap: 6 },
+  batteryText: { fontSize: 11, fontWeight: 600, marginLeft: 2 },
+  content: { position: 'absolute', top: 32, left: 0, right: 0, bottom: 24, overflow: 'auto' },
+  navBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+};
+
+function AndroidFrame({ children, width = 375, height = 808, time = '9:41', battery = 82, darkBg }) {
+  return (
+    <div style={androidFrameStyles.wrapper}>
+      <div style={{ ...androidFrameStyles.screen, width, height, background: darkBg || '#fff' }}>
+        <div style={{ ...androidFrameStyles.statusBar, color: '#1a1a1a' }}>
+          <span>{time}</span>
+          <div style={androidFrameStyles.statusIcons}>
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="currentColor"><rect x="0" y="6" width="2" height="4" rx="0.5" /><rect x="4" y="4" width="2" height="6" rx="0.5" /><rect x="8" y="2" width="2" height="8" rx="0.5" /><rect x="12" y="0" width="2" height="10" rx="0.5" /></svg>
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M7 9a1 1 0 100-2 1 1 0 000 2z" fill="currentColor" /><path d="M3 6a5 5 0 018 0" stroke="currentColor" strokeWidth="1.2" /><path d="M0.5 3.5a11 11 0 0113 0" stroke="currentColor" strokeWidth="1.2" opacity="0.6" /></svg>
+            <div style={{ width: 22, height: 10, border: '1.5px solid currentColor', borderRadius: 2, padding: 1 }}>
+              <div style={{ width: `${battery}%`, height: '100%', background: 'currentColor', borderRadius: 1 }} />
+            </div>
+            <span style={androidFrameStyles.batteryText}>{battery}%</span>
+          </div>
+        </div>
+        <div style={androidFrameStyles.punchHole} />
+        <div style={androidFrameStyles.content}>{children}</div>
+        <div style={androidFrameStyles.navBar}>
+          <div style={{ width: 100, height: 4, background: 'rgba(0,0,0,0.35)', borderRadius: 999 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShowboardLabel({ s, theme, width }) {
+  return (
+    <div style={{ width, marginBottom: 10 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: theme.fg, lineHeight: 1.3 }}>{s.label}</div>
+      {s.note && <div style={{ fontSize: 13, color: theme.muted, lineHeight: 1.5, marginTop: 2 }}>{s.note}</div>}
+    </div>
+  );
+}
+
+function ShowboardPhone({ s, theme, x, y, scale, phoneW, phoneH }) {
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, width: phoneW * scale }}>
+      <ShowboardLabel s={s} theme={theme} width={phoneW * scale} />
+      <div style={{ width: phoneW * scale, height: phoneH * scale }}>
+        <div style={{ transform: `scale(${scale})`, transformOrigin: '0 0', width: phoneW }}>{s.node}</div>
+      </div>
+    </div>
+  );
+}
+
+function Showboard({ layout = 'hero', theme = {}, title, kicker, lede, screens = [], aside, phoneW = 395, phoneH = 828, footnote }) {
+  const t = { bg: '#F1F2F5', fg: '#1D1D1F', muted: '#6E727B', accent: '#3478F6', font: 'inherit', ...theme };
+  const W = 1440, M = 56;
+  const mainIdx = Math.max(0, screens.findIndex((s) => s.main));
+  const main = screens[mainIdx], rest = screens.filter((_, i) => i !== mainIdx);
+  const LABEL = 56;
+  const placed = [];
+  let asidePos = null, height = 0;
+
+  const big = 1.0, small = 0.78;
+  const my = 240;
+  placed.push({ s: main, x: M, y: my, scale: big });
+  const colX = [M + phoneW * big + 56, M + phoneW * big + 56 + phoneW * small + 36];
+  rest.forEach((s, i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    placed.push({ s, x: colX[col], y: my - 30 + (col ? 110 : 0) + row * (phoneH * small + LABEL + 52), scale: small });
+  });
+  asidePos = { x: W - M - 310, y: 48, w: 310 };
+  placed.forEach((p) => { height = Math.max(height, p.y + LABEL + phoneH * p.scale + M); });
+
+  return (
+    <div data-showboard={layout} style={{ position: 'relative', width: W, height, background: t.bg, color: t.fg, fontFamily: t.font, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', left: M, top: 48, width: 820 }}>
+        {kicker && <div style={{ fontSize: 13, color: t.accent, fontWeight: 700, marginBottom: 8 }}>{kicker}</div>}
+        <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.08, fontFamily: '"Noto Serif SC", serif' }}>{title}</div>
+        {lede && <div style={{ fontSize: 15, lineHeight: 1.65, color: t.muted, marginTop: 12 }}>{lede}</div>}
+      </div>
+      {placed.map((p, i) => <ShowboardPhone key={i} {...p} theme={t} phoneW={phoneW} phoneH={phoneH} />)}
+      {aside && asidePos && <div style={{ position: 'absolute', left: asidePos.x, top: asidePos.y, width: asidePos.w }}>{aside}</div>}
+      {footnote && <div style={{ position: 'absolute', left: M, bottom: 24, fontSize: 12, color: t.muted }}>{footnote}</div>}
+    </div>
+  );
+}
+
+const initialPeople = [
+  {
+    id: 1,
+    name: '陈知远',
+    rels: ['朋友', '球友'],
+    tint: { bg: '#FFE7DE', fg: '#B4431F' },
+    bio: '建筑设计师，周三晚常约半场篮球，膝盖有旧伤。',
+    updated: '今天 14:20',
+    entries: [
+      { id: 11, cat: '兴趣爱好', color: '#E0703A', title: '周三打半场篮球', desc: '固定在城西体育馆，不喜欢太激烈的对抗。' },
+      { id: 12, cat: '生活习惯', color: '#3C8C63', title: '美式咖啡不加糖', desc: '下午三点前喝，太晚会失眠。' },
+    ],
+    conversations: [
+      { id: 101, source: '剪贴板', time: '今天 14:18', text: '这周三老地方球馆见，我顺路带两瓶无糖乌龙茶给你，七点半集合。' },
+    ],
+  },
+  {
+    id: 2,
+    name: '林嘉禾',
+    rels: ['同事'],
+    tint: { bg: '#E3ECFF', fg: '#2C56B8' },
+    bio: '客户端负责人，周末喜欢去郊区徒步拍照。',
+    updated: '昨天',
+    entries: [
+      { id: 21, cat: '重要日期', color: '#C4433C', title: '生日 10月14日', desc: '去年送过胶片相机背带，很喜欢。' },
+    ],
+    conversations: [
+      { id: 201, source: '手动输入', time: '昨天 19:05', text: '下周评审会改到周四上午十点，记得提前把数据库版本对齐。' },
+    ],
+  },
+  {
+    id: 3,
+    name: '苏晚',
+    rels: ['同学', '朋友'],
+    tint: { bg: '#EFE7FF', fg: '#6446A0' },
+    bio: '插画师，养了一只叫芝麻的三花猫，不吃香菜。',
+    updated: '11月21日',
+    entries: [
+      { id: 31, cat: '生活习惯', color: '#3C8C63', title: '不吃香菜和折耳根', desc: '约火锅记得点清汤双拼。' },
+    ],
+    conversations: [],
+  },
+];
+
+const CLIPBOARD_SAMPLE = '陈知远：我下个月要搬去城南新工作室了，地址发你：滨江路 88 号 3 楼，有空过来喝茶！';
+
+function WeChatChatBackdrop({ children }) {
+  return (
+    <div style={{ position: 'relative', height: '100%', background: '#EDEDED', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: 46, background: '#EDEDED', borderBottom: '1px solid #DFDFDF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', fontSize: 15, fontWeight: 600, color: '#181818' }}>
+        <span>‹ 微信</span>
+        <span>陈知远</span>
+        <span style={{ fontSize: 16 }}>···</span>
+      </div>
+      <div style={{ flex: 1, padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 12, opacity: 0.9 }}>
+        <div style={{ alignSelf: 'center', fontSize: 11, color: '#888', background: '#E2E2E2', padding: '2px 8px', borderRadius: 4 }}>14:15</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <div style={{ width: 34, height: 34, borderRadius: 6, background: '#D6B89C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#5A3E24', flexShrink: 0 }}>陈</div>
+          <div style={{ background: '#FFF', padding: '9px 12px', borderRadius: 8, fontSize: 13, lineHeight: 1.5, color: '#222', maxWidth: 230, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+            我下个月要搬去城南新工作室了，地址发你：滨江路 88 号 3 楼，有空过来喝茶！
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexDirection: 'row-reverse' }}>
+          <div style={{ width: 34, height: 34, borderRadius: 6, background: '#95EC69', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#224414', flexShrink: 0 }}>我</div>
+          <div style={{ background: '#95EC69', padding: '9px 12px', borderRadius: 8, fontSize: 13, lineHeight: 1.5, color: '#1A1A1A', maxWidth: 200 }}>
+            收到，我记到备忘录里！
+          </div>
+        </div>
+      </div>
+      <div style={{ height: 48, background: '#F7F7F7', borderTop: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', padding: '0 10px', gap: 8 }}>
+        <div style={{ flex: 1, height: 34, background: '#FFF', borderRadius: 6, border: '1px solid #EAEAEA' }} />
+        <div style={{ padding: '6px 12px', borderRadius: 6, background: '#07C160', color: '#FFF', fontSize: 12, fontWeight: 600 }}>发送</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ScreenFloatingCollector({ initialMode = 'collect' }) {
+  const [people, setPeople] = useState(initialPeople);
+  const [expanded, setExpanded] = useState(true);
+  const [mode, setMode] = useState(initialMode);
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState(1);
+  const [draftText, setDraftText] = useState(CLIPBOARD_SAMPLE);
+  const [sourceType, setSourceType] = useState('剪贴板');
+  const [newName, setNewName] = useState('');
+  const [newBio, setNewBio] = useState('');
+  const [toast, setToast] = useState('');
+
+  const selectedPerson = people.find((p) => p.id === selectedId) || people[0];
+  const filtered = people.filter((p) => p.name.includes(query.trim()));
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2000);
+  };
+
+  const handleReadClipboard = () => {
+    setDraftText(CLIPBOARD_SAMPLE);
+    setSourceType('剪贴板');
+    showToast('已读取剪贴板文本');
+  };
+
+  const handleSaveConv = () => {
+    if (!draftText.trim() || !selectedPerson) return;
+    setPeople((prev) =>
+      prev.map((p) =>
+        p.id === selectedPerson.id
+          ? { ...p, conversations: [{ id: Date.now(), source: sourceType, time: '刚刚', text: draftText.trim() }, ...p.conversations] }
+          : p
+      )
+    );
+    setDraftText('');
+    showToast(`已保存到「${selectedPerson.name}」`);
+  };
+
+  const handleQuickCreate = () => {
+    if (!newName.trim()) return;
+    const id = Date.now();
+    const created = {
+      id,
+      name: newName.trim(),
+      rels: ['未分组'],
+      tint: { bg: '#ECEDF1', fg: '#5A5F68' },
+      bio: newBio.trim(),
+      updated: '刚刚',
+      entries: [],
+      conversations: [],
+    };
+    setPeople([created, ...people]);
+    setSelectedId(id);
+    setNewName('');
+    setNewBio('');
+    setMode('collect');
+    showToast(`已创建并选中「${created.name}」`);
+  };
+
+  return (
+    <WeChatChatBackdrop>
+      <div
+        onClick={() => setExpanded(!expanded)}
+        title="点击展开/收起悬浮助手"
+        style={{
+          position: 'absolute',
+          right: 12,
+          top: expanded ? 56 : 260,
+          width: 48,
+          height: 48,
+          borderRadius: '50%',
+          background: '#FFFFFF',
+          border: '2px solid #3478F6',
+          boxShadow: '0 8px 24px rgba(52,120,246,0.28)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 15,
+          transition: 'all 0.22s ease',
+        }}
+      >
+        <div style={{ width: 22, height: 22, borderRadius: 6, background: '#3478F6', color: '#FFF', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>记</div>
+      </div>
+
+      {expanded && (
+        <div style={{
+          position: 'absolute',
+          left: 14,
+          right: 14,
+          top: 96,
+          bottom: 58,
+          background: '#FFFFFF',
+          borderRadius: 18,
+          boxShadow: '0 22px 54px rgba(17,24,39,0.22), 0 0 0 1px #E6E7EC',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          zIndex: 12,
+        }}>
+          <div style={{ padding: '12px 16px 10px', borderBottom: '1px solid #E6E7EC', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#3478F6' }}>MEMORANDUM 悬浮便签</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1D1D1F', marginTop: 1 }}>
+                {mode === 'quickAdd' ? '快速记一个人' : mode === 'detail' ? `${selectedPerson.name}的档案` : '收集到人物档案'}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => setMode(mode === 'detail' ? 'collect' : 'detail')}
+                style={{ border: '1px solid #E6E7EC', background: '#F7F7FA', borderRadius: 8, padding: '5px 9px', fontSize: 12, color: '#4C4F57', cursor: 'pointer' }}
+              >
+                {mode === 'detail' ? '回收集' : '看档案'}
+              </button>
+              <button
+                onClick={() => setExpanded(false)}
+                style={{ border: 'none', background: '#F2F2F6', borderRadius: 8, padding: '5px 9px', fontSize: 12, color: '#6E727B', cursor: 'pointer' }}
+              >
+                收起
+              </button>
+            </div>
+          </div>
+
+          {mode === 'collect' && (
+            <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#6E727B' }}>1. 选择归属人物（必选）</span>
+                  <button onClick={() => setMode('quickAdd')} style={{ border: 'none', background: 'none', color: '#3478F6', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    ＋ 添加新人物
+                  </button>
+                </div>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜索人物姓名…"
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: 'none', background: '#F2F2F6', fontSize: 13, marginBottom: 8 }}
+                />
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {filtered.map((p) => {
+                    const active = p.id === selectedId;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => setSelectedId(p.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '5px 10px',
+                          borderRadius: 999,
+                          background: active ? '#EBF2FF' : '#F7F7FA',
+                          border: active ? '1.5px solid #3478F6' : '1px solid #E6E7EC',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ width: 18, height: 18, borderRadius: '50%', background: p.tint.bg, color: p.tint.fg, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{p.name[0]}</span>
+                        <span style={{ fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? '#1D1D1F' : '#4C4F57' }}>{p.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#6E727B' }}>2. 对话内容（来源：{sourceType}）</span>
+                  <button
+                    onClick={handleReadClipboard}
+                    style={{ border: '1px solid #D6E4FF', background: '#F2F6FF', color: '#3478F6', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    读取剪贴板
+                  </button>
+                </div>
+                <textarea
+                  value={draftText}
+                  onChange={(e) => { setDraftText(e.target.value); if (!e.target.value) setSourceType('手动输入'); }}
+                  placeholder="点击「读取剪贴板」或在此手动输入对话…"
+                  style={{ flex: 1, minHeight: 130, padding: 12, borderRadius: 12, border: '1px solid #E6E7EC', background: '#FAFAFC', fontSize: 14, lineHeight: 1.65, color: '#1D1D1F', resize: 'none' }}
+                />
+                <div style={{ fontSize: 12, color: '#6E727B', marginTop: 6 }}>
+                  原始文本将直接归档，不做自动分析或猜测对象。
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'quickAdd' && (
+            <div style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ fontSize: 12.5, color: '#6E727B', lineHeight: 1.5 }}>
+                快速建档仅需姓名，创建后自动选中并回到对话收集。
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#6E727B', marginBottom: 6 }}>姓名 · 必填</div>
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="写平时怎么称呼他"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: 'none', background: '#F7F7FA', fontSize: 14 }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#6E727B', marginBottom: 6 }}>个人简介 · 选填</div>
+                <textarea
+                  value={newBio}
+                  onChange={(e) => setNewBio(e.target.value)}
+                  placeholder="例如：滨江路工作室刚认识的设计师"
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: 'none', background: '#F7F7FA', fontSize: 14, resize: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                <button onClick={() => setMode('collect')} style={{ flex: 1, padding: '11px 0', borderRadius: 10, border: '1px solid #E6E7EC', background: '#FFF', color: '#6E727B', fontSize: 14, cursor: 'pointer' }}>取消</button>
+                <button onClick={handleQuickCreate} disabled={!newName.trim()} style={{ flex: 2, padding: '11px 0', borderRadius: 10, border: 'none', background: newName.trim() ? '#3478F6' : '#C9CACE', color: '#FFF', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>创建并选中</button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'detail' && selectedPerson && (
+            <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: selectedPerson.tint.bg, color: selectedPerson.tint.fg, fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{selectedPerson.name[0]}</div>
+                <div>
+                  <div style={{ fontSize: 19, fontWeight: 700, fontFamily: '"Noto Serif SC", serif' }}>{selectedPerson.name}</div>
+                  <div style={{ display: 'flex', gap: 5, marginTop: 3 }}>
+                    {selectedPerson.rels.map((r) => (
+                      <span key={r} style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: selectedPerson.tint.bg, color: selectedPerson.tint.fg }}>{r}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={{ fontSize: 14, color: '#4C4F57', lineHeight: 1.6 }}>{selectedPerson.bio}</div>
+              <div style={{ borderTop: '1px solid #E6E7EC', paddingTop: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#6E727B', marginBottom: 8 }}>记忆词条（只读）</div>
+                {selectedPerson.entries.map((e) => (
+                  <div key={e.id} style={{ padding: '7px 0', borderBottom: '1px solid #F2F2F6' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: e.color }} />
+                      <span>{e.title}</span>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: '#6E727B', marginTop: 2, paddingLeft: 12 }}>{e.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {mode === 'collect' && (
+            <div style={{ padding: '10px 16px 14px', borderTop: '1px solid #E6E7EC', display: 'flex', gap: 8 }}>
+              <button onClick={() => setDraftText('')} style={{ padding: '11px 14px', borderRadius: 10, border: 'none', background: '#F2F2F6', color: '#6E727B', fontSize: 13.5, cursor: 'pointer' }}>清空</button>
+              <button
+                onClick={handleSaveConv}
+                disabled={!draftText.trim() || !selectedPerson}
+                style={{ flex: 1, padding: '11px 0', borderRadius: 10, border: 'none', background: draftText.trim() && selectedPerson ? '#3478F6' : '#C9CACE', color: '#FFF', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+              >
+                保存对话给 {selectedPerson?.name}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: 'absolute', bottom: 68, left: '50%', transform: 'translateX(-50%)', background: '#1D1D1F', color: '#FFF', padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 500, zIndex: 30, whiteSpace: 'nowrap', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
+          ✓ {toast}
+        </div>
+      )}
+    </WeChatChatBackdrop>
+  );
+}
+
+function ScreenAppHome() {
+  const [assistantOn, setAssistantOn] = useState(true);
+  const [activeTab, setActiveTab] = useState('全部');
+  const tabs = ['全部', '朋友', '同事', '球友'];
+
+  return (
+    <div style={{ height: '100%', background: '#FFF', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '18px 20px 12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: -0.5 }}>人物</div>
+          <span style={{ fontSize: 12.5, color: '#3478F6', fontWeight: 500 }}>最近更新 ⌄</span>
+        </div>
+        <div style={{ fontSize: 12.5, color: '#6E727B', marginTop: 4 }}>3 个人 · 4 条词条 · 2 条对话</div>
+
+        <div
+          onClick={() => setAssistantOn(!assistantOn)}
+          style={{
+            marginTop: 12,
+            padding: '10px 12px',
+            borderRadius: 12,
+            background: assistantOn ? '#F2F6FF' : '#F7F7FA',
+            border: `1px solid ${assistantOn ? '#D6E4FF' : '#E6E7EC'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: '#1D1D1F' }}>全局悬浮助手</div>
+            <div style={{ fontSize: 12, color: '#6E727B', marginTop: 1 }}>
+              {assistantOn ? '已开启 · 可在微信/QQ 快捷搜人与收对话' : '已关闭 · 点此开启跨应用悬浮球'}
+            </div>
+          </div>
+          <div style={{ width: 42, height: 24, borderRadius: 999, background: assistantOn ? '#3478F6' : '#C9CACE', padding: 2, transition: 'all 0.2s' }}>
+            <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FFF', transform: assistantOn ? 'translateX(18px)' : 'none', transition: 'all 0.2s' }} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, background: '#F2F2F6', borderRadius: 10, padding: '9px 12px', fontSize: 14, color: '#6E727B' }}>
+          搜名字、简介、词条或对话…
+        </div>
+
+        <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
+          {tabs.map((t) => (
+            <div
+              key={t}
+              onClick={() => setActiveTab(t)}
+              style={{ fontSize: 14, fontWeight: activeTab === t ? 700 : 500, color: activeTab === t ? '#3478F6' : '#6E727B', borderBottom: activeTab === t ? '2px solid #3478F6' : '2px solid transparent', paddingBottom: 6, cursor: 'pointer' }}
+            >
+              {t}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ borderTop: '1px solid #E6E7EC', flex: 1, padding: '0 20px', overflow: 'auto' }}>
+        {initialPeople
+          .filter((p) => activeTab === '全部' || p.rels.includes(activeTab))
+          .map((p) => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #E6E7EC', gap: 12 }}>
+              <div style={{ width: 42, height: 42, borderRadius: '50%', background: p.tint.bg, color: p.tint.fg, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{p.name[0]}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>{p.name}</div>
+                <div style={{ fontSize: 12.5, color: '#6E727B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>{p.bio}</div>
+                <div style={{ fontSize: 12, color: '#6E727B', marginTop: 3 }}>
+                  <span style={{ color: p.tint.fg, fontWeight: 600 }}>{p.rels.join(' · ')}</span> · {p.entries.length} 词条 · {p.conversations.length} 对话
+                </div>
+              </div>
+              <span style={{ color: '#C3C6CE', fontSize: 18 }}>›</span>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+function ScreenPersonDetail() {
+  const [subTab, setSubTab] = useState('conversations');
+  const p = initialPeople[0];
+
+  return (
+    <div style={{ height: '100%', background: '#FFF', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: 48, padding: '0 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 15.5, color: '#3478F6' }}>‹ 人物</span>
+        <span style={{ fontSize: 14.5, color: '#3478F6', fontWeight: 500 }}>编辑</span>
+      </div>
+      <div style={{ padding: '4px 20px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: p.tint.bg, color: p.tint.fg, fontSize: 23, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff', boxShadow: `0 0 0 3px ${p.tint.bg}` }}>{p.name[0]}</div>
+          <div>
+            <div style={{ fontSize: 27, fontWeight: 700, fontFamily: '"Noto Serif SC", serif' }}>{p.name}</div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+              {p.rels.map((r) => (
+                <span key={r} style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: p.tint.bg, color: p.tint.fg }}>{r}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: 14, color: '#4C4F57', lineHeight: 1.6, marginTop: 12 }}>{p.bio}</div>
+
+        <div style={{ display: 'flex', background: '#F2F2F6', borderRadius: 10, padding: 3, marginTop: 16 }}>
+          <div onClick={() => setSubTab('entries')} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 8, background: subTab === 'entries' ? '#FFF' : 'transparent', fontSize: 13, fontWeight: subTab === 'entries' ? 600 : 500, cursor: 'pointer', boxShadow: subTab === 'entries' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>
+            记忆词条 ({p.entries.length})
+          </div>
+          <div onClick={() => setSubTab('conversations')} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 8, background: subTab === 'conversations' ? '#FFF' : 'transparent', fontSize: 13, fontWeight: subTab === 'conversations' ? 600 : 500, cursor: 'pointer', boxShadow: subTab === 'conversations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>
+            原始对话 ({p.conversations.length + 1})
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, borderTop: '1px solid #E6E7EC', padding: '12px 20px', overflow: 'auto' }}>
+        {subTab === 'conversations' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ padding: 12, borderRadius: 12, background: '#F7F7FA', border: '1px solid #E6E7EC' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6E727B', marginBottom: 6 }}>
+                <span style={{ color: '#3478F6', fontWeight: 600 }}>剪贴板收集</span>
+                <span>刚刚</span>
+              </div>
+              <div style={{ fontSize: 14, lineHeight: 1.6, color: '#1D1D1F' }}>{CLIPBOARD_SAMPLE}</div>
+            </div>
+            {p.conversations.map((c) => (
+              <div key={c.id} style={{ padding: 12, borderRadius: 12, background: '#F7F7FA', border: '1px solid #E6E7EC' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6E727B', marginBottom: 6 }}>
+                  <span>{c.source}</span>
+                  <span>{c.time}</span>
+                </div>
+                <div style={{ fontSize: 14, lineHeight: 1.6, color: '#1D1D1F' }}>{c.text}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            {p.entries.map((e) => (
+              <div key={e.id} style={{ padding: '11px 0', borderBottom: '1px solid #E6E7EC' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: e.color }} />
+                  <span>{e.title}</span>
+                </div>
+                <div style={{ fontSize: 13, color: '#6E727B', marginTop: 4, paddingLeft: 15 }}>{e.desc}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScreenDockedBall() {
+  const [side, setSide] = useState('right');
+  return (
+    <WeChatChatBackdrop>
+      <div
+        onClick={() => setSide(side === 'right' ? 'left' : 'right')}
+        title="点击切换贴边位置"
+        style={{
+          position: 'absolute',
+          top: 240,
+          right: side === 'right' ? -10 : 'auto',
+          left: side === 'left' ? -10 : 'auto',
+          width: 48,
+          height: 48,
+          borderRadius: '50%',
+          background: '#FFFFFF',
+          border: '2px solid #3478F6',
+          boxShadow: '0 8px 24px rgba(52,120,246,0.28)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{ width: 22, height: 22, borderRadius: 6, background: '#3478F6', color: '#FFF', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>记</div>
+      </div>
+      <div style={{ position: 'absolute', bottom: 88, left: 24, right: 24, background: 'rgba(29,29,31,0.88)', color: '#FFF', borderRadius: 12, padding: '10px 14px', fontSize: 12.5, lineHeight: 1.5 }}>
+        悬浮球支持拖动与自动贴边，点击「记」字球即可切换左右吸附位置。
+      </div>
+    </WeChatChatBackdrop>
+  );
+}
+
+function App() {
+  const screens = [
+    {
+      label: '01 · 跨应用悬浮便签（主场景）',
+      note: '在微信等第三方应用中展开悬浮面板，主动读取剪贴板、搜人或快建并保存对话',
+      main: true,
+      node: <AndroidFrame><ScreenFloatingCollector initialMode="collect" /></AndroidFrame>,
+    },
+    {
+      label: '02 · 独立 App 首页',
+      note: '顶部提供全局悬浮助手总开关，列表直接展示词条与对话数',
+      node: <AndroidFrame><ScreenAppHome /></AndroidFrame>,
+    },
+    {
+      label: '03 · 悬浮快速新建人物',
+      note: '遇新人物只填姓名与选填简介，创建后自动选中并继续收对话',
+      node: <AndroidFrame><ScreenFloatingCollector initialMode="quickAdd" /></AndroidFrame>,
+    },
+    {
+      label: '04 · 人物详情 · 原始对话归档',
+      note: '在人物详情页切换查看「记忆词条」与「原始对话」列表',
+      node: <AndroidFrame><ScreenPersonDetail /></AndroidFrame>,
+    },
+    {
+      label: '05 · 悬浮球贴边待命态',
+      note: '收起后贴边吸附并记忆位置，不遮挡第三方聊天阅读',
+      node: <AndroidFrame><ScreenDockedBall /></AndroidFrame>,
+    },
+  ];
+
+  return (
+    <Showboard
+      layout="hero"
+      theme={{ bg: '#F1F2F5', fg: '#1D1D1F', muted: '#6E727B', accent: '#3478F6' }}
+      kicker="方向一 · 最佳设计师（延续 V1.0 纸面克制体系）"
+      title="白纸叠卡 · 悬浮便签"
+      lede="把跨应用悬浮助手做成一张轻盈浮在聊天窗上的白色便签纸：延续 1px 发丝线与衬线人名，所有动作集中在单张卡片内完成。"
+      screens={screens}
+      aside={
+        <div style={{ background: '#FFF', borderRadius: 14, padding: 16, border: '1px solid #E6E7EC' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#3478F6', marginBottom: 6 }}>form 来自内容的哪里</div>
+          <div style={{ fontSize: 13, lineHeight: 1.6, color: '#4C4F57' }}>
+            记住别人的一句话，就像在聊天间隙随手夹进笔记本的一张白色便签纸。
+          </div>
+        </div>
+      }
+      footnote="每台手机均可交互：试试切换模式、点击读取剪贴板、新建人物或收起悬浮球。"
+    />
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
