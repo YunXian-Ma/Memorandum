@@ -23,4 +23,9 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Memorandum"
+
 include(":app")
+include(":domain")
+include(":data")
+include(":core:designsystem")
+include(":service:floating")

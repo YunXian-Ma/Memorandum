@@ -34,8 +34,6 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.jfeng2048.memorandum.MainActivity
-import com.jfeng2048.memorandum.R
 import com.jfeng2048.memorandum.core.designsystem.theme.MemorandumTheme
 import com.jfeng2048.memorandum.data.local.prefs.AppPreferences
 import com.jfeng2048.memorandum.domain.model.ConversationSource
@@ -367,12 +365,14 @@ class FloatingAssistantService : Service() {
                 NotificationChannel(CHANNEL_ID, "悬浮助手", NotificationManager.IMPORTANCE_LOW),
             )
         }
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            ?: Intent().setPackage(packageName)
         val open = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java),
+            this, 0, launchIntent,
             PendingIntent.FLAG_IMMUTABLE,
         )
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("悬浮助手已开启")
             .setContentText("点击悬浮球，把对话收进人物档案")
             .setContentIntent(open)
