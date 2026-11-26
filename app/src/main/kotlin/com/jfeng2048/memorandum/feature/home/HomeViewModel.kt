@@ -9,6 +9,7 @@ import com.jfeng2048.memorandum.domain.model.PersonEntry
 import com.jfeng2048.memorandum.domain.model.Relationship
 import com.jfeng2048.memorandum.domain.repository.PersonRepository
 import com.jfeng2048.memorandum.domain.usecase.PersonFilters
+import com.jfeng2048.memorandum.feature.floating.FloatingPet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -17,13 +18,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -48,12 +52,22 @@ class HomeViewModel @Inject constructor(
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
 
-    private val _floatingEnabled = MutableStateFlow(preferences.floatingAssistantEnabled)
-    val floatingEnabled: StateFlow<Boolean> = _floatingEnabled.asStateFlow()
+    val floatingEnabled: StateFlow<Boolean> = preferences.floatingEnabledFlow
+
+    val selectedPet: StateFlow<FloatingPet> = preferences.floatingPetIdFlow
+        .map { FloatingPet.fromId(it) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = FloatingPet.fromId(preferences.floatingPetId),
+        )
 
     fun setFloatingEnabled(enabled: Boolean) {
         preferences.floatingAssistantEnabled = enabled
-        _floatingEnabled.value = enabled
+    }
+
+    fun selectPet(pet: FloatingPet) {
+        preferences.floatingPetId = pet.id
     }
 
     private var observeJob: Job? = null

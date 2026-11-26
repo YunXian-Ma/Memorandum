@@ -16,6 +16,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.jfeng2048.memorandum.feature.floating.FloatingAssistantService
+import com.jfeng2048.memorandum.feature.floating.FloatingPet
+import com.jfeng2048.memorandum.feature.floating.PetAvatar
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -102,6 +104,7 @@ fun HomeScreen(
 
     val context = LocalContext.current
     val floatingEnabled by viewModel.floatingEnabled.collectAsStateWithLifecycle()
+    val selectedPet by viewModel.selectedPet.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     fun startOrStop(enabled: Boolean) {
@@ -131,6 +134,7 @@ fun HomeScreen(
     HomeContent(
         state = state,
         floatingEnabled = floatingEnabled,
+        selectedPet = selectedPet,
         onToggleFloating = { want ->
             if (!want) {
                 startOrStop(false)
@@ -151,6 +155,7 @@ fun HomeScreen(
                 }
             }
         },
+        onSelectPet = { viewModel.selectPet(it) },
         onQueryChange = { viewModel.onEvent(HomeEvent.QueryChanged(it)) },
         onFilterChange = { viewModel.onEvent(HomeEvent.FilterChanged(it)) },
         onToggleSort = { viewModel.onEvent(HomeEvent.ToggleSort) },
@@ -166,7 +171,9 @@ fun HomeScreen(
 private fun HomeContent(
     state: HomeUiState,
     floatingEnabled: Boolean,
+    selectedPet: FloatingPet,
     onToggleFloating: (Boolean) -> Unit,
+    onSelectPet: (FloatingPet) -> Unit,
     onQueryChange: (String) -> Unit,
     onFilterChange: (Long?) -> Unit,
     onToggleSort: () -> Unit,
@@ -226,7 +233,12 @@ private fun HomeContent(
                 }
 
                 Spacer(Modifier.height(12.dp))
-                FloatingAssistantCard(enabled = floatingEnabled, onToggle = onToggleFloating)
+                FloatingAssistantCard(
+                    enabled = floatingEnabled,
+                    selectedPet = selectedPet,
+                    onToggle = onToggleFloating,
+                    onSelectPet = onSelectPet,
+                )
 
                 Spacer(Modifier.height(12.dp))
                 SearchField(value = state.query, onValueChange = onQueryChange)
@@ -316,42 +328,94 @@ private fun PeopleList(
 @Composable
 private fun FloatingAssistantCard(
     enabled: Boolean,
+    selectedPet: FloatingPet,
     onToggle: (Boolean) -> Unit,
+    onSelectPet: (FloatingPet) -> Unit,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(if (enabled) Color(0xFFF2F6FF) else SurfaceMuted)
             .border(1.dp, Hairline, RoundedCornerShape(12.dp))
             .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "全局悬浮助手",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Ink,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = if (enabled) "已开启 · 在聊天软件里点悬浮球收集" else "开启后可在其他 App 上快速收集对话",
-                fontSize = 11.5.sp,
-                color = Muted,
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(selectedPet.softBg)
+                    .border(1.dp, selectedPet.primaryColor.copy(alpha = 0.7f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                PetAvatar(pet = selectedPet, size = 30.dp)
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "悬浮宠物助手 · ${selectedPet.displayName}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = if (enabled) {
+                        "拖回${selectedPet.homeName}可让它回家休息"
+                    } else {
+                        "选一只小宠物陪你在其他 App 随时记一笔"
+                    },
+                    fontSize = 11.5.sp,
+                    color = Muted,
+                )
+            }
+            Switch(
+                checked = enabled,
+                onCheckedChange = onToggle,
+                colors = SwitchDefaults.colors(
+                    checkedTrackColor = BrandBlue,
+                    checkedThumbColor = Color.White,
+                    uncheckedTrackColor = TrackGrey,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedBorderColor = Hairline,
+                ),
             )
         }
-        Switch(
-            checked = enabled,
-            onCheckedChange = onToggle,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = BrandBlue,
-                checkedThumbColor = Color.White,
-                uncheckedTrackColor = TrackGrey,
-                uncheckedThumbColor = Color.White,
-                uncheckedBorderColor = Hairline,
-            ),
-        )
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FloatingPet.entries.forEach { pet ->
+                val isSelected = pet == selectedPet
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) Canvas else Color.Transparent)
+                        .border(
+                            width = if (isSelected) 1.2.dp else 1.dp,
+                            color = if (isSelected) BrandBlue else Hairline,
+                            shape = RoundedCornerShape(10.dp),
+                        )
+                        .clickable { onSelectPet(pet) }
+                        .padding(horizontal = 6.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    PetAvatar(pet = pet, size = 22.dp)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = pet.displayName,
+                        fontSize = 11.5.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isSelected) Ink else TextSecondary,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
     }
 }
 

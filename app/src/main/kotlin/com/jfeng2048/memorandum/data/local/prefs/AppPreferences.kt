@@ -2,6 +2,9 @@ package com.jfeng2048.memorandum.data.local.prefs
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,13 +20,31 @@ class AppPreferences @Inject constructor(
     private val preferences =
         context.getSharedPreferences("memorandum_prefs", Context.MODE_PRIVATE)
 
+    private val _floatingEnabledFlow =
+        MutableStateFlow(preferences.getBoolean(KEY_FLOATING, false))
+    val floatingEnabledFlow: StateFlow<Boolean> = _floatingEnabledFlow.asStateFlow()
+
+    private val _floatingPetIdFlow =
+        MutableStateFlow(preferences.getString(KEY_FLOATING_PET, DEFAULT_PET_ID) ?: DEFAULT_PET_ID)
+    val floatingPetIdFlow: StateFlow<String> = _floatingPetIdFlow.asStateFlow()
+
     var isSeeded: Boolean
         get() = preferences.getBoolean(KEY_SEEDED, false)
         set(value) = preferences.edit().putBoolean(KEY_SEEDED, value).apply()
 
     var floatingAssistantEnabled: Boolean
         get() = preferences.getBoolean(KEY_FLOATING, false)
-        set(value) = preferences.edit().putBoolean(KEY_FLOATING, value).apply()
+        set(value) {
+            preferences.edit().putBoolean(KEY_FLOATING, value).apply()
+            _floatingEnabledFlow.value = value
+        }
+
+    var floatingPetId: String
+        get() = preferences.getString(KEY_FLOATING_PET, DEFAULT_PET_ID) ?: DEFAULT_PET_ID
+        set(value) {
+            preferences.edit().putString(KEY_FLOATING_PET, value).apply()
+            _floatingPetIdFlow.value = value
+        }
 
     var floatingBallIsLeft: Boolean
         get() = preferences.getBoolean(KEY_BALL_LEFT, false)
@@ -36,6 +57,8 @@ class AppPreferences @Inject constructor(
 
     private companion object {
         const val KEY_FLOATING = "floating_enabled"
+        const val KEY_FLOATING_PET = "floating_pet_id"
+        const val DEFAULT_PET_ID = "cat"
         const val KEY_BALL_LEFT = "floating_ball_left"
         const val KEY_BALL_Y = "floating_ball_y_ratio"
 

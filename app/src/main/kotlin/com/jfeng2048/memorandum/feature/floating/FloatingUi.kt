@@ -1,8 +1,10 @@
 package com.jfeng2048.memorandum.feature.floating
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.draw.rotate
@@ -88,16 +90,35 @@ data class FloatingPanelState(
 
 @Composable
 fun FloatingBall(
+    pet: FloatingPet,
+    isDragging: Boolean,
+    isOverHome: Boolean,
+    onDragStart: () -> Unit,
     onDrag: (Float, Float) -> Unit,
     onDragEnd: () -> Unit,
     onTap: () -> Unit,
 ) {
+    val scale by animateFloatAsState(
+        targetValue = when {
+            isOverHome -> 0.86f
+            isDragging -> 1.08f
+            else -> 1f
+        },
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
+        label = "petBallScale",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isOverHome) pet.roofColor else pet.primaryColor,
+        animationSpec = tween(160),
+        label = "petBallBorder",
+    )
     Box(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) { detectTapGestures(onTap = { onTap() }) }
             .pointerInput(Unit) {
                 detectDragGestures(
+                    onDragStart = { onDragStart() },
                     onDragEnd = onDragEnd,
                     onDragCancel = onDragEnd,
                 ) { change, amount ->
@@ -105,20 +126,73 @@ fun FloatingBall(
                     onDrag(amount.x, amount.y)
                 }
             }
+            .scale(scale)
             .shadow(6.dp, CircleShape)
             .clip(CircleShape)
-            .background(Canvas)
-            .border(2.dp, BrandBlue, CircleShape),
+            .background(pet.softBg)
+            .border(2.dp, borderColor, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
+        PetAvatar(
+            pet = pet,
+            size = 40.dp,
+            happyEyes = isOverHome,
+        )
+    }
+}
+
+/**
+ * 拖拽悬浮宠物时在屏幕底部弹出的「宠物的家」回收区。
+ * 拖入该区域松手即表示宠物回家休息（关闭悬浮窗）。
+ */
+@Composable
+fun PetHomeDock(
+    pet: FloatingPet,
+    hovered: Boolean,
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (hovered) 1.08f else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 360f),
+        label = "petHomeScale",
+    )
+    val bgColor by animateColorAsState(
+        targetValue = if (hovered) pet.softBg else Canvas.copy(alpha = 0.96f),
+        animationSpec = tween(160),
+        label = "petHomeBg",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (hovered) pet.roofColor else Hairline,
+        animationSpec = tween(160),
+        label = "petHomeBorder",
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 26.dp),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Column(
             modifier = Modifier
-                .size(26.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(BrandBlue),
-            contentAlignment = Alignment.Center,
+                .scale(scale)
+                .shadow(if (hovered) 14.dp else 8.dp, RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(24.dp))
+                .background(bgColor)
+                .border(BorderStroke(if (hovered) 1.5.dp else 1.dp, borderColor), RoundedCornerShape(24.dp))
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("记", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            PetHomeIcon(
+                pet = pet,
+                hovered = hovered,
+                size = 44.dp,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = if (hovered) "松手让${pet.displayName}回家" else pet.homeSubtitle,
+                fontSize = 12.5.sp,
+                fontWeight = if (hovered) FontWeight.Bold else FontWeight.Medium,
+                color = if (hovered) pet.roofColor else TextSecondary,
+            )
         }
     }
 }
@@ -126,6 +200,7 @@ fun FloatingBall(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FloatingPanel(
+    pet: FloatingPet,
     state: FloatingPanelState,
     people: List<Person>,
     categories: List<EntryCategory>,
@@ -176,6 +251,7 @@ fun FloatingPanel(
         ) {
             when (state.mode) {
                 FloatingMode.COLLECT -> CollectMode(
+                    pet = pet,
                     state = state,
                     people = people,
                     categories = categories,
@@ -203,6 +279,7 @@ fun FloatingPanel(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColumnScope.CollectMode(
+    pet: FloatingPet,
     state: FloatingPanelState,
     people: List<Person>,
     categories: List<EntryCategory>,
@@ -222,12 +299,25 @@ private fun ColumnScope.CollectMode(
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Mascot(size = 30.dp)
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(pet.softBg)
+                .border(1.dp, pet.primaryColor.copy(alpha = 0.6f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            PetAvatar(pet = pet, size = 28.dp)
+        }
         Spacer(Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text("记一笔", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Ink)
             Text(
-                text = if (selected == null) "先挑个人，我帮你记住 TA" else "正在记录 ${selected.name} 的故事",
+                text = if (selected == null) {
+                    "${pet.displayName}陪你记录，先挑个人吧"
+                } else {
+                    "正在记录 ${selected.name} 的故事"
+                },
                 fontSize = 11.sp,
                 color = Muted,
             )
@@ -439,21 +529,6 @@ private fun KindSwitcher(kind: CollectKind, onChange: (CollectKind) -> Unit) {
                 )
             }
         }
-    }
-}
-
-/** 面板吉祥物：一张带笑脸的小便签 */
-@Composable
-private fun Mascot(size: androidx.compose.ui.unit.Dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .rotate(-6f)
-            .clip(RoundedCornerShape(size * 0.3f))
-            .background(Color(0xFFFFE9A8)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("\u2022\u1D17\u2022", fontSize = (size.value * 0.4f).sp, color = Ink)
     }
 }
 

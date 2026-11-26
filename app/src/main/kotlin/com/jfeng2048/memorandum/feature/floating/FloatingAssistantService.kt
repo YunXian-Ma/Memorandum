@@ -68,11 +68,15 @@ class FloatingAssistantService : Service() {
 
     private var ballView: ComposeView? = null
     private var panelView: ComposeView? = null
+    private var homeDockView: ComposeView? = null
     private lateinit var ballParams: WindowManager.LayoutParams
 
     private var people by mutableStateOf<List<Person>>(emptyList())
     private var categories by mutableStateOf<List<EntryCategory>>(emptyList())
     private var panelState by mutableStateOf(FloatingPanelState())
+    private var currentPet by mutableStateOf(FloatingPet.CAT)
+    private var isDraggingBall by mutableStateOf(false)
+    private var isOverPetHome by mutableStateOf(false)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -92,6 +96,10 @@ class FloatingAssistantService : Service() {
                 panelState = panelState.copy(categoryId = null)
             }
         }.launchIn(scope)
+        preferences.floatingPetIdFlow
+            .onEach { id -> currentPet = FloatingPet.fromId(id) }
+            .launchIn(scope)
+        initHomeDock()
         showBall()
         // 应用自己在前台时不显示悬浮球；面板打开时由面板接管
         AppForeground.visible.onEach { refreshBallVisibility() }.launchIn(scope)
@@ -106,6 +114,8 @@ class FloatingAssistantService : Service() {
 
     override fun onDestroy() {
         hidePanel()
+        homeDockView?.let { runCatching { windowManager.removeView(it) } }
+        homeDockView = null
         ballView?.let { runCatching { windowManager.removeView(it) } }
         ballView = null
         owner.stop()
@@ -132,13 +142,23 @@ class FloatingAssistantService : Service() {
         }
         val view = newComposeView {
             FloatingBall(
+                pet = currentPet,
+                isDragging = isDraggingBall,
+                isOverHome = isOverPetHome,
+                onDragStart = { startBallDrag() },
                 onDrag = { dx, dy -> moveBall(dx, dy) },
-                onDragEnd = { snapBall() },
+                onDragEnd = { finishBallDrag() },
                 onTap = { showPanel() },
             )
         }
         ballView = view
         windowManager.addView(view, ballParams)
+    }
+
+    private fun startBallDrag() {
+        isDraggingBall = true
+        isOverPetHome = false
+        homeDockView?.visibility = View.VISIBLE
     }
 
     /** 贴边后只露出一半，减少对第三方界面的遮挡 */
@@ -151,9 +171,18 @@ class FloatingAssistantService : Service() {
         ballParams.x += dx.toInt()
         ballParams.y += dy.toInt()
         ballView?.let { windowManager.updateViewLayout(it, ballParams) }
+        isOverPetHome = isBallInsideHomeZone()
     }
 
-    private fun snapBall() {
+    private fun finishBallDrag() {
+        val sendHome = isOverPetHome
+        isDraggingBall = false
+        isOverPetHome = false
+        homeDockView?.visibility = View.GONE
+        if (sendHome) {
+            sendPetHome()
+            return
+        }
         val dm = resources.displayMetrics
         val size = ballParams.width
         val left = ballParams.x + size / 2 < dm.widthPixels / 2
@@ -162,6 +191,52 @@ class FloatingAssistantService : Service() {
         ballView?.let { windowManager.updateViewLayout(it, ballParams) }
         preferences.floatingBallIsLeft = left
         preferences.floatingBallYRatio = ballParams.y.toFloat() / dm.heightPixels
+    }
+
+    /** 先于悬浮球添加，确保宠物拖拽进小窝时始终位于小窝上方，且不打断当前手势 */
+    private fun initHomeDock() {
+        val dm = resources.displayMetrics
+        val dockHeight = (HOME_DOCK_HEIGHT_DP * dm.density).toInt()
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            dockHeight,
+            overlayType(),
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+        }
+        val view = newComposeView {
+            PetHomeDock(
+                pet = currentPet,
+                hovered = isOverPetHome,
+            )
+        }
+        view.visibility = View.GONE
+        homeDockView = view
+        windowManager.addView(view, params)
+    }
+
+    private fun isBallInsideHomeZone(): Boolean {
+        val dm = resources.displayMetrics
+        val ballCenterX = ballParams.x + ballParams.width / 2f
+        val ballCenterY = ballParams.y + ballParams.height / 2f
+        val homeCenterX = dm.widthPixels / 2f
+        val homeCenterY = dm.heightPixels - (HOME_CENTER_BOTTOM_DP * dm.density)
+        val hitRadiusX = HOME_HIT_HALF_WIDTH_DP * dm.density
+        val hitRadiusY = HOME_HIT_HALF_HEIGHT_DP * dm.density
+        return kotlin.math.abs(ballCenterX - homeCenterX) <= hitRadiusX &&
+            kotlin.math.abs(ballCenterY - homeCenterY) <= hitRadiusY
+    }
+
+    /** 宠物回家：关闭悬浮窗并同步关闭开关状态 */
+    private fun sendPetHome() {
+        val message = currentPet.wentHomeToast
+        preferences.floatingAssistantEnabled = false
+        toast(message)
+        stopSelf()
     }
 
     // ---------- 面板 ----------
@@ -183,6 +258,7 @@ class FloatingAssistantService : Service() {
         }
         val view = newComposeView {
             FloatingPanel(
+                pet = currentPet,
                 state = panelState,
                 people = people,
                 categories = categories,
@@ -334,7 +410,11 @@ class FloatingAssistantService : Service() {
     companion object {
         private const val CHANNEL_ID = "floating_assistant"
         private const val NOTIFICATION_ID = 1101
-        private const val BALL_DP = 48
+        private const val BALL_DP = 54
+        private const val HOME_DOCK_HEIGHT_DP = 156
+        private const val HOME_CENTER_BOTTOM_DP = 82
+        private const val HOME_HIT_HALF_WIDTH_DP = 104
+        private const val HOME_HIT_HALF_HEIGHT_DP = 76
 
         fun start(context: Context) {
             val intent = Intent(context, FloatingAssistantService::class.java)
