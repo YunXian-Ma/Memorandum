@@ -6,7 +6,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.jfeng2048.memorandum.core.designsystem.theme.MemorandumTheme
-import com.jfeng2048.memorandum.core.navigation.AppNavHost
+import com.jfeng2048.memorandum.navigation.AppNavHost
 import dagger.hilt.android.AndroidEntryPoint
 
 /**

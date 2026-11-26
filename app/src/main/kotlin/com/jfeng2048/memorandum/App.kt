@@ -2,7 +2,7 @@ package com.jfeng2048.memorandum
 
 import android.app.Application
 import android.util.Log
-import com.jfeng2048.memorandum.feature.floating.AppForeground
+import com.jfeng2048.memorandum.service.floating.AppForeground
 import com.jfeng2048.memorandum.domain.repository.PersonRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject

@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             content {
@@ -22,5 +23,20 @@ dependencyResolutionManagement {
     }
 }
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "Memorandum"
+
 include(":app")
+include(":core:common")
+include(":core:designsystem")
+include(":core:navigation")
+include(":core:floatingtheme")
+include(":domain")
+include(":data")
+include(":feature:home")
+include(":feature:person")
+include(":feature:entry")
+include(":feature:relationship")
+include(":feature:category")
+include(":service:floating")
+
