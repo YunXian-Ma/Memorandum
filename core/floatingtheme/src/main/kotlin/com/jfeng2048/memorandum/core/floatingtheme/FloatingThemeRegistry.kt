@@ -65,7 +65,18 @@ class FloatingThemeRepository private constructor(context: Context) : FloatingTh
                 home = ref(img.getString("home")),
                 homeHover = img.optString("homeHover").takeIf { it.isNotEmpty() }?.let(ref),
             ),
+            animations = parseAnimations(o.optJSONObject("animations"), ref),
         )
+    }
+
+    private fun parseAnimations(o: JSONObject?, ref: (String) -> ThemeImageRef): Map<PetState, SpriteAnimation> {
+        if (o == null) return emptyMap()
+        return PetState.values().mapNotNull { state ->
+            val a = o.optJSONObject(state.key) ?: return@mapNotNull null
+            val frames = a.optInt("frames", 1)
+            if (frames < 2) return@mapNotNull null
+            state to SpriteAnimation(ref(a.getString("sheet")), frames, a.optInt("fps", 10).coerceIn(1, 30))
+        }.toMap()
     }
 
     companion object {

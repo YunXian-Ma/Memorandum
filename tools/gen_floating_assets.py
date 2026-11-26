@@ -111,16 +111,53 @@ def home(t, hover):
     c.poly([(.08,.48),(.50,.14),(.92,.48)], roof, True)
     c.circ(.5,.35,.065, "#FFF3B0" if hover else (255,255,255,230), True, .7); return c
 
+import math
+
+def xform(img, sx=1.0, sy=1.0, rot=0.0, dy=0, base=0.86):
+    """把 256 方图缩放/旋转/位移后放回 256 画布（以底边中点为支点），用于生成动画帧"""
+    n = 256; k = base
+    w, h = int(n*k*sx), int(n*k*sy)
+    im = img.resize((w, h), Image.LANCZOS)
+    cv = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    cv.alpha_composite(im, ((n-w)//2, int(n*0.96-h+dy)))
+    return cv.rotate(rot, resample=Image.BICUBIC, center=(n/2, n*0.9))
+
+def sheet(frames, path):
+    sh = Image.new("RGBA", (256*len(frames), 256), (0, 0, 0, 0))
+    for i, f in enumerate(frames): sh.alpha_composite(f, (i*256, 0))
+    sh.save(path)
+
+def make_sheets(d):
+    a = Image.open(f"{d}/avatar.png"); h = Image.open(f"{d}/avatar_happy.png")
+    # idle：呼吸起伏，第 6 帧眨眼（用笑眼图当闭眼）
+    idle = []
+    for i in range(8):
+        t = math.sin(i/8*2*math.pi)
+        idle.append(xform(h if i == 5 else a, 1+0.025*t, 1-0.04*t))
+    sheet(idle, f"{d}/anim_idle.png")
+    # dragging：被拎起来左右晃
+    drag = [xform(a, 0.96, 1.06, 12*math.sin(i/8*2*math.pi), -6) for i in range(8)]
+    sheet(drag, f"{d}/anim_dragging.png")
+    # happy：笑眼蹦跳
+    hap = []
+    for i in range(8):
+        t = abs(math.sin(i/8*math.pi*2))
+        hap.append(xform(h, 1+0.05*(1-t), 1-0.05*(1-t)+0.04*t, 6*math.sin(i/8*2*math.pi), -16*t))
+    sheet(hap, f"{d}/anim_happy.png")
+
 if __name__ == "__main__":
     for t in THEMES:
         d = os.path.join(OUT, t["id"]); os.makedirs(d, exist_ok=True)
         fn = dict(cat=cat, shiba=shiba, rabbit=rabbit, bear=bear)[t["id"]]
         fn(t, False).out(f"{d}/avatar.png"); fn(t, True).out(f"{d}/avatar_happy.png")
         home(t, False).out(f"{d}/home.png"); home(t, True).out(f"{d}/home_hover.png")
+        make_sheets(d)
+        anim = lambda n, fps: dict(sheet=f"anim_{n}.png", frames=8, fps=fps)
         m = dict(id=t["id"], displayName=t["displayName"], homeName=t["homeName"],
                  homeSubtitle="拖回{homeName}休息", wentHomeToast=t["toast"],
                  idleHint="选一只小宠物陪你在其他 App 随时记一笔",
                  companionTip="{displayName}陪你记录，先挑个人吧",
                  palette=dict(primary=t["primary"], accent=t["accent"], softBg=t["softBg"], roof=t["roof"]),
-                 images=dict(avatar="avatar.png", avatarHappy="avatar_happy.png", home="home.png", homeHover="home_hover.png"))
+                 images=dict(avatar="avatar.png", avatarHappy="avatar_happy.png", home="home.png", homeHover="home_hover.png"),
+                 animations=dict(idle=anim("idle", 8), dragging=anim("dragging", 12), happy=anim("happy", 12)))
         json.dump(m, open(f"{d}/theme.json", "w"), ensure_ascii=False, indent=2)

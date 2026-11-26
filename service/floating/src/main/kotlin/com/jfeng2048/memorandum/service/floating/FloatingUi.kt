@@ -55,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jfeng2048.memorandum.core.floatingtheme.FloatingAvatar
 import com.jfeng2048.memorandum.core.floatingtheme.FloatingHomeIcon
+import com.jfeng2048.memorandum.core.floatingtheme.FloatingPet
+import com.jfeng2048.memorandum.core.floatingtheme.PetState
 import com.jfeng2048.memorandum.core.floatingtheme.FloatingTheme
 import com.jfeng2048.memorandum.core.designsystem.component.CategoryDot
 import com.jfeng2048.memorandum.core.designsystem.component.PersonAvatar
@@ -136,10 +138,14 @@ fun FloatingBall(
             .border(2.dp, borderColor, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        FloatingAvatar(
+        FloatingPet(
             theme = theme,
+            state = when {
+                isOverHome -> PetState.HAPPY
+                isDragging -> PetState.DRAGGING
+                else -> PetState.IDLE
+            },
             size = 40.dp,
-            happyEyes = isOverHome,
         )
     }
 }

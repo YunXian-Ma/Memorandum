@@ -33,6 +33,12 @@ data class FloatingThemeImages(
     val homeHover: ThemeImageRef?,
 )
 
+/** 悬浮宠物的动画状态 */
+enum class PetState(val key: String) { IDLE("idle"), DRAGGING("dragging"), HAPPY("happy") }
+
+/** 精灵图动画：[sheet] 是 [frames] 帧横向排列的 PNG，每帧为正方形 */
+data class SpriteAnimation(val sheet: ThemeImageRef, val frames: Int, val fps: Int)
+
 /**
  * 一个悬浮窗主题 = 标识 + 配色 + 文案 + 图片资源，纯数据，由 `theme.json` 解析而来。
  * 新增主题只需放一个包含 theme.json 与 PNG 的目录，无需任何代码。
@@ -43,4 +49,6 @@ data class FloatingTheme(
     val copy: FloatingThemeCopy,
     val palette: FloatingPalette,
     val images: FloatingThemeImages,
+    /** 各状态的帧动画，缺省的状态回落到静态头像 */
+    val animations: Map<PetState, SpriteAnimation> = emptyMap(),
 )

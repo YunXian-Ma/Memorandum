@@ -17,5 +17,22 @@
     "avatarHappy": "avatar_happy.png",
     "home": "home.png",
     "homeHover": "home_hover.png"
+  },
+  "animations": {
+    "idle": {
+      "sheet": "anim_idle.png",
+      "frames": 8,
+      "fps": 8
+    },
+    "dragging": {
+      "sheet": "anim_dragging.png",
+      "frames": 8,
+      "fps": 12
+    },
+    "happy": {
+      "sheet": "anim_happy.png",
+      "frames": 8,
+      "fps": 12
+    }
   }
 }

@@ -40,6 +40,7 @@ build-logic         约定插件：memorandum.android.{application,library,compo
 
 ## 4. 悬浮窗主题扩展（资源可扩展）
 - 一个主题 = 一个资源目录：`core/floatingtheme/src/main/assets/floating_themes/<id>/`，内含 `theme.json`（id、文案、四色 palette、图片文件名）与 PNG（`avatar`、可选 `avatar_happy`、`home`、可选 `home_hover`）。宠物**不用代码绘制**，只加载图片。
+- 动画：`theme.json` 的 `animations` 可为 `idle`/`dragging`/`happy` 各配一张横排精灵图 PNG（`sheet`、`frames`、`fps`，每帧正方形），由 `FloatingPet` 播放；不配则回落静态头像。不使用 GIF。
 - 新增主题：复制一个现有目录，替换图片并改 `theme.json`，**不需要改任何 Kotlin 代码**。首页选择器、悬浮球、小窝、文案都按装载结果渲染。
 - 外部主题包：同结构放到 `filesDir/floating_themes/<id>/`，同 id 覆盖内置，由 `FloatingThemeRepository` 一并装载。
 - `tools/gen_floating_assets.py` 仅用于生成内置四个主题的初始图片，非运行时依赖。

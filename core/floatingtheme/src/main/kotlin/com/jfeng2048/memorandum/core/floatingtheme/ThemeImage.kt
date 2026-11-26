@@ -17,9 +17,9 @@ import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val cache = LruCache<String, ImageBitmap>(32)
+internal val cache = LruCache<String, ImageBitmap>(32)
 
-private suspend fun loadThemeImage(context: Context, ref: ThemeImageRef): ImageBitmap? {
+internal suspend fun loadThemeImage(context: Context, ref: ThemeImageRef): ImageBitmap? {
     cache.get(ref.key)?.let { return it }
     return withContext(Dispatchers.IO) {
         runCatching {
