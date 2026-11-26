@@ -10,7 +10,9 @@ import com.jfeng2048.memorandum.domain.model.Relationship
 import com.jfeng2048.memorandum.domain.repository.PersonRepository
 import com.jfeng2048.memorandum.domain.usecase.PersonFilters
 import com.jfeng2048.memorandum.core.floatingtheme.FloatingTheme
-import com.jfeng2048.memorandum.core.floatingtheme.FloatingThemes
+import com.jfeng2048.memorandum.core.floatingtheme.FloatingThemeRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -41,6 +43,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel @Inject constructor(
     private val repository: PersonRepository,
     private val floatingSettings: FloatingSettings,
+    @ApplicationContext context: Context,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
@@ -53,14 +56,17 @@ class HomeViewModel @Inject constructor(
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
 
+    private val themes = FloatingThemeRepository.get(context)
+    val allThemes: List<FloatingTheme> = themes.all
+
     val floatingEnabled: StateFlow<Boolean> = floatingSettings.enabledFlow
 
     val selectedTheme: StateFlow<FloatingTheme> = floatingSettings.themeIdFlow
-        .map { FloatingThemes.fromId(it) }
+        .map { themes.fromId(it) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
-            initialValue = FloatingThemes.fromId(floatingSettings.themeId),
+            initialValue = themes.fromId(floatingSettings.themeId),
         )
 
     fun setFloatingEnabled(enabled: Boolean) {

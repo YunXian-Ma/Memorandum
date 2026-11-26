@@ -1,0 +1,21 @@
+{
+  "id": "shiba",
+  "displayName": "柴犬",
+  "homeName": "小木屋",
+  "homeSubtitle": "拖回{homeName}休息",
+  "wentHomeToast": "柴犬回小木屋啦",
+  "idleHint": "选一只小宠物陪你在其他 App 随时记一笔",
+  "companionTip": "{displayName}陪你记录，先挑个人吧",
+  "palette": {
+    "primary": "E29D48",
+    "accent": "FFF5E1",
+    "softBg": "FFF7E8",
+    "roof": "C86D44"
+  },
+  "images": {
+    "avatar": "avatar.png",
+    "avatarHappy": "avatar_happy.png",
+    "home": "home.png",
+    "homeHover": "home_hover.png"
+  }
+}

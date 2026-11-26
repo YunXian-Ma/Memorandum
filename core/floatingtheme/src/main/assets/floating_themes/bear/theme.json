@@ -1,0 +1,21 @@
+{
+  "id": "bear",
+  "displayName": "小熊",
+  "homeName": "树洞",
+  "homeSubtitle": "拖回{homeName}休息",
+  "wentHomeToast": "小熊回树洞睡午觉啦",
+  "idleHint": "选一只小宠物陪你在其他 App 随时记一笔",
+  "companionTip": "{displayName}陪你记录，先挑个人吧",
+  "palette": {
+    "primary": "C68B59",
+    "accent": "F3D5B5",
+    "softBg": "FBF3EC",
+    "roof": "6B8E55"
+  },
+  "images": {
+    "avatar": "avatar.png",
+    "avatarHappy": "avatar_happy.png",
+    "home": "home.png",
+    "homeHover": "home_hover.png"
+  }
+}

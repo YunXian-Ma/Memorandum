@@ -17,7 +17,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.jfeng2048.memorandum.service.floating.FloatingAssistantService
 import com.jfeng2048.memorandum.core.floatingtheme.FloatingTheme
-import com.jfeng2048.memorandum.core.floatingtheme.FloatingThemes
 import com.jfeng2048.memorandum.core.floatingtheme.FloatingAvatar
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -136,6 +135,7 @@ fun HomeScreen(
         state = state,
         floatingEnabled = floatingEnabled,
         selectedTheme = selectedTheme,
+        allThemes = viewModel.allThemes,
         onToggleFloating = { want ->
             if (!want) {
                 startOrStop(false)
@@ -173,6 +173,7 @@ private fun HomeContent(
     state: HomeUiState,
     floatingEnabled: Boolean,
     selectedTheme: FloatingTheme,
+    allThemes: List<FloatingTheme>,
     onToggleFloating: (Boolean) -> Unit,
     onSelectTheme: (FloatingTheme) -> Unit,
     onQueryChange: (String) -> Unit,
@@ -237,6 +238,7 @@ private fun HomeContent(
                 FloatingAssistantCard(
                     enabled = floatingEnabled,
                     selectedTheme = selectedTheme,
+                    allThemes = allThemes,
                     onToggle = onToggleFloating,
                     onSelectTheme = onSelectTheme,
                 )
@@ -330,6 +332,7 @@ private fun PeopleList(
 private fun FloatingAssistantCard(
     enabled: Boolean,
     selectedTheme: FloatingTheme,
+    allThemes: List<FloatingTheme>,
     onToggle: (Boolean) -> Unit,
     onSelectTheme: (FloatingTheme) -> Unit,
 ) {
@@ -388,7 +391,7 @@ private fun FloatingAssistantCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FloatingThemes.all.forEach { theme ->
+            allThemes.forEach { theme ->
                 val isSelected = theme.id == selectedTheme.id
                 Row(
                     modifier = Modifier

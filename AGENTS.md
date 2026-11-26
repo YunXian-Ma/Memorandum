@@ -26,7 +26,7 @@ app                 装配层：入口、导航图（navigation/AppNavHost）、
 core:common         纯 JVM 工具（日期格式等）
 core:navigation     纯 JVM 路由表 Routes
 core:designsystem   Compose 主题 / 组件 / 色板令牌
-core:floatingtheme  悬浮窗主题注册表 + 各主题绘制（themes/）
+core:floatingtheme  悬浮窗主题装载器（读 assets 里的 theme.json + 图片）
 domain              纯 JVM：model / repository 接口 / usecase
 data                Room（entity/dao/relation）、仓库实现、偏好、种子数据、Hilt 模块
 feature:*           home / person / entry / relationship / category，各自 Screen+ViewModel+UiState
@@ -39,9 +39,11 @@ build-logic         约定插件：memorandum.android.{application,library,compo
 - namespace 由模块路径自动推导（`:feature:home` -> `com.jfeng2048.memorandum.feature.home`），包名需与之一致。
 
 ## 4. 悬浮窗主题扩展（资源可扩展）
-- 一个主题 = `FloatingTheme(id, copy 文案, palette 配色, drawAvatar 绘制)`，文件放在 `core/floatingtheme/.../themes/`。
-- 新增主题：新建 `XxxTheme.kt`（可复制 `CatTheme.kt`），再把它加进 `FloatingThemes.all`。首页选择器、悬浮球、小窝、文案都按注册表渲染，**界面与服务代码不需要任何改动**。
-- 主题 `id` 是持久化键，发布后不可更改；未知 id 自动回落到 `FloatingThemes.default`。
+- 一个主题 = 一个资源目录：`core/floatingtheme/src/main/assets/floating_themes/<id>/`，内含 `theme.json`（id、文案、四色 palette、图片文件名）与 PNG（`avatar`、可选 `avatar_happy`、`home`、可选 `home_hover`）。宠物**不用代码绘制**，只加载图片。
+- 新增主题：复制一个现有目录，替换图片并改 `theme.json`，**不需要改任何 Kotlin 代码**。首页选择器、悬浮球、小窝、文案都按装载结果渲染。
+- 外部主题包：同结构放到 `filesDir/floating_themes/<id>/`，同 id 覆盖内置，由 `FloatingThemeRepository` 一并装载。
+- `tools/gen_floating_assets.py` 仅用于生成内置四个主题的初始图片，非运行时依赖。
+- 主题 `id` 是持久化键，发布后不可更改；未知 id 自动回落到 默认主题（cat）。
 - 界面层禁止硬编码「猫窝」等主题词汇，一律读 `theme.copy.*`。
 
 ## 5. 数据库命名规范

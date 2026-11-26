@@ -1,0 +1,21 @@
+{
+  "id": "rabbit",
+  "displayName": "白兔",
+  "homeName": "草窝",
+  "homeSubtitle": "拖回{homeName}休息",
+  "wentHomeToast": "白兔钻回草窝啦",
+  "idleHint": "选一只小宠物陪你在其他 App 随时记一笔",
+  "companionTip": "{displayName}陪你记录，先挑个人吧",
+  "palette": {
+    "primary": "FFFFFF",
+    "accent": "FFB5C2",
+    "softBg": "FFF0F4",
+    "roof": "7BB661"
+  },
+  "images": {
+    "avatar": "avatar.png",
+    "avatarHappy": "avatar_happy.png",
+    "home": "home.png",
+    "homeHover": "home_hover.png"
+  }
+}

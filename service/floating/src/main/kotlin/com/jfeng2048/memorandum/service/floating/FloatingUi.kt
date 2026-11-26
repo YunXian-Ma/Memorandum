@@ -185,7 +185,7 @@ fun ThemeHomeDock(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             FloatingHomeIcon(
-                palette = theme.palette,
+                theme = theme,
                 hovered = hovered,
                 size = 44.dp,
             )

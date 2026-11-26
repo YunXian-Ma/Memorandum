@@ -41,7 +41,8 @@ import com.jfeng2048.memorandum.domain.model.EntryCategory
 import com.jfeng2048.memorandum.domain.model.Person
 import com.jfeng2048.memorandum.domain.repository.PersonRepository
 import com.jfeng2048.memorandum.domain.repository.FloatingSettings
-import com.jfeng2048.memorandum.core.floatingtheme.FloatingThemes
+import com.jfeng2048.memorandum.core.floatingtheme.FloatingTheme
+import com.jfeng2048.memorandum.core.floatingtheme.FloatingThemeRepository
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -74,7 +75,9 @@ class FloatingAssistantService : Service() {
     private var people by mutableStateOf<List<Person>>(emptyList())
     private var categories by mutableStateOf<List<EntryCategory>>(emptyList())
     private var panelState by mutableStateOf(FloatingPanelState())
-    private var currentTheme by mutableStateOf(FloatingThemes.default)
+    private val themes by lazy { FloatingThemeRepository.get(this) }
+    private var themeState by mutableStateOf<FloatingTheme?>(null)
+    private val currentTheme: FloatingTheme get() = themeState ?: themes.default
     private var isDraggingBall by mutableStateOf(false)
     private var isOverThemeHome by mutableStateOf(false)
 
@@ -97,7 +100,7 @@ class FloatingAssistantService : Service() {
             }
         }.launchIn(scope)
         settings.themeIdFlow
-            .onEach { id -> currentTheme = FloatingThemes.fromId(id) }
+            .onEach { id -> themeState = themes.fromId(id) }
             .launchIn(scope)
         initHomeDock()
         showBall()
